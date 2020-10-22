@@ -139,23 +139,21 @@ class MyDropInService : DropInService() {
                     println("____EXCEPTION____8")
                     if (paymentsResponse.resultCode != null &&
                             (paymentsResponse.resultCode == "Authorised" || paymentsResponse.resultCode == "Received" || paymentsResponse.resultCode == "Pending")) {
-                        mActivity?.runOnUiThread { result?.success("SUCCESS") }
                         CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode)
                     } else {
                         println("____EXCEPTION____7")
-                        mActivity?.runOnUiThread { result?.error("Result code is ${paymentsResponse.resultCode}", "Payment not Authorised", "") }
                         CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode
                                 ?: "EMPTY")
                     }
                 }
             } else {
                 println("____EXCEPTION____6")
-                mActivity?.runOnUiThread { result?.error("FAILED - ${response.message()}", "IOException", "") }
+
                 CallResult(CallResult.ResultType.ERROR, "IOException")
             }
         } catch (e: IOException) {
             println("____EXCEPTION____5")
-            mActivity?.runOnUiThread { result?.error("FAILED", e.stackTrace.toString(), "") }
+
             CallResult(CallResult.ResultType.ERROR, "IOException")
         }
     }
@@ -175,22 +173,18 @@ class MyDropInService : DropInService() {
                 println("____EXCEPTION____4")
                 if (detailsResponse.resultCode != null &&
                         (detailsResponse.resultCode == "Authorised" || detailsResponse.resultCode == "Received" || detailsResponse.resultCode == "Pending")) {
-                    mActivity?.runOnUiThread { result?.success("SUCCESS") }
                     CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode)
                 } else {
                     println("____EXCEPTION____3")
-                    mActivity?.runOnUiThread { result?.error("Result code is ${detailsResponse.resultCode}", "Payment not Authorised", "") }
                     CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode
                             ?: "EMPTY")
                 }
             } else {
                 println("____EXCEPTION____2")
-                mActivity?.runOnUiThread { result?.error("FAILED - ${response.message()}", "IOException", "") }
                 CallResult(CallResult.ResultType.ERROR, "IOException")
             }
         } catch (e: IOException) {
             println("____EXCEPTION____1")
-            mActivity?.runOnUiThread { result?.error("FAILED", e.stackTrace.toString(), "") }
             CallResult(CallResult.ResultType.ERROR, "IOException")
         }
     }
