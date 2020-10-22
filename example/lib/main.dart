@@ -1,8 +1,6 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_adyen/flutter_adyen.dart';
 
 import 'mock_data.dart';
@@ -15,23 +13,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
+  String _payment_result = 'Unknown';
 
   String dropInResponse;
-
-  Future<void> initPlatformState() async {
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = dropInResponse;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,23 +24,21 @@ class _MyAppState extends State<MyApp> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.add),
           onPressed: () async {
-            try {
-              dropInResponse = await FlutterAdyen.openDropIn(
-                paymentMethods: jsonEncode(examplePaymentMethods),
-                baseUrl: 'https://xxxxxxxxx/payment/',
-                authToken: 'Bearer AAABBBCCCDDD222111',
-                merchantAccount: 'YOURMERCHANTACCOUNTCOM',
-                publicKey: pubKey,
-                amount: '1230',
-                currency: 'EUR',
-                shopperReference: DateTime.now().millisecondsSinceEpoch.toString(),
-                reference: DateTime.now().millisecondsSinceEpoch.toString(),
-              );
-            } on PlatformException {
-              dropInResponse = 'Failed to get platform version.';
-            }
+            dropInResponse = await FlutterAdyen.openDropIn(
+              paymentMethods: jsonEncode(examplePaymentMethods),
+              baseUrl: 'https://xxxxxxxxx/payment/',
+              authToken: 'Bearer AAABBBCCCDDD222111',
+              merchantAccount: 'YOURMERCHANTACCOUNTCOM',
+              publicKey: pubKey,
+              amount: '1230',
+              currency: 'EUR',
+              shopperReference:
+                  DateTime.now().millisecondsSinceEpoch.toString(),
+              reference: DateTime.now().millisecondsSinceEpoch.toString(),
+            );
+
             setState(() {
-              _platformVersion = dropInResponse;
+              _payment_result = dropInResponse;
             });
             setState(() {});
           },
@@ -65,7 +47,7 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Flutter Adyen'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Text('Payment Result: $_payment_result\n'),
         ),
       ),
     );

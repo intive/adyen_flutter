@@ -4,6 +4,10 @@ import Adyen
 import Adyen3DS2
 import Foundation
 
+struct PaymentError: Error {
+    
+}
+
 public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -47,21 +51,17 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         }
         
         let configuration = DropInComponent.PaymentMethodsConfiguration()
-        configuration.card.publicKey = pubKey
+        configuration.clientKey = pubKey
         dropInComponent = DropInComponent(paymentMethods: paymentMethods, paymentMethodsConfiguration: configuration)
         dropInComponent?.delegate = self
         dropInComponent?.environment = .test
         
-        //        topController = UIApplication.shared.keyWindow?.rootViewController
-        //        while let presentedViewController = topController?.presentedViewController {
-        //            topController = presentedViewController
-        //        }
-        if var topController = UIApplication.shared.keyWindow?.rootViewController {
+        if var topController = UIApplication.shared.keyWindow?.rootViewController, let dropIn = dropInComponent {
             self.topController = topController
             while let presentedViewController = topController.presentedViewController{
                 topController = presentedViewController
             }
-            topController.present(dropInComponent!.viewController, animated: true)
+            topController.present(dropIn.viewController, animated: true)
         }
     }
 }
@@ -72,45 +72,53 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("\(authToken!)", forHTTPHeaderField: "Authorization")
+        request.setValue("\(authToken ?? "")", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let amountAsDouble = Double(amount!)
+        let amountAsDouble = Double(amount ?? "0.0")
         // prepare json data
-        let json: [String: Any] = ["paymentMethod": data.paymentMethod.dictionaryRepresentation,
-                                   "amount": ["currency":currency, "value":amountAsDouble],
+        let paymentMethod = data.paymentMethod.encodable
+        let json: [String: Any] = ["paymentMethod": paymentMethod,
+                                   "amount": ["currency":currency ?? "", "value":amountAsDouble ?? 0.0],
                                    "channel": "iOS",
-                                   "merchantAccount": merchantAccount,
-                                   "reference": reference,
-                                   "returnUrl": returnUrl! + "://",
+                                   "merchantAccount": merchantAccount ?? "",
+                                   "reference": reference ?? "",
+                                   "returnUrl": returnUrl ?? "" + "://",
                                    "storePaymentMethod": false,
                                    "additionalData": ["allow3DS2":"false"]]
         
-        let jsonData = try? JSONSerialization.data(withJSONObject: json)
-        
-        request.httpBody = jsonData
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if(data != nil) {
-                self.finish(data: data!, component: component)
+        do {
+            if JSONSerialization.isValidJSONObject(json) {
+                let jsonData = try JSONSerialization.data(withJSONObject: json)
+                request.httpBody = jsonData
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    if let data = data {
+                        self.finish(data: data, component: component)
+                    }
+                    }.resume()
+            } else {
+                didFail(with: PaymentError(), from: component)
             }
-            }.resume()
+            
+        } catch {
+            didFail(with: PaymentError(), from: component)
+        }
+
     }
     
     func finish(data: Data, component: DropInComponent) {
-        let paymentResponseJson = try? JSONSerialization.jsonObject(with: data, options: .allowFragments) as? Dictionary<String,Any>
-        if ((paymentResponseJson) != nil) {
-            let action = paymentResponseJson?!["action"]
-            if(action != nil) {
-                let act = try? JSONDecoder().decode(Action.self, from: JSONSerialization.data(withJSONObject: action, options: .sortedKeys)) as! Action
-                if(act != nil){
-                    component.handle(act!)
+        let paymentResponseJson = ((try? JSONSerialization.jsonObject(with: data, options: .allowFragments) as? Dictionary<String,Any>) as Dictionary<String, Any>??)
+       
+        if let dict = paymentResponseJson, let action = dict?["action"] {
+                let act = try? JSONDecoder().decode(Action.self, from: JSONSerialization.data(withJSONObject: action, options: .sortedKeys))
+                if let act = act {
+                    component.handle(act)
                 }
-            } else {
-                let resultCode = try? paymentResponseJson!!["resultCode"] as! String
+        } else if let dict = paymentResponseJson, let resultCode = dict?["resultCode"] as? String {
                 let success = resultCode == "Authorised" || resultCode == "Received" || resultCode == "Pending"
                 component.stopLoading()
-                if (success) {
-                    self.mResult!("SUCCESS")
+                if success, let result = self.mResult {
+                    result("SUCCESS")
                     DispatchQueue.global(qos: .background).async {
                         
                         // Background Thread
@@ -119,7 +127,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                         }
                     }
                 } else {
-                    self.mResult!("Failed with result code \(resultCode)")
+                    self.mResult?("Failed with result code \(String(describing: resultCode))")
                     DispatchQueue.global(qos: .background).async {
                         
                         // Background Thread
@@ -128,8 +136,10 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                             self.topController?.dismiss(animated: false, completion: nil)
                         }
                     }
-                }
+                
             }
+        } else {
+            didFail(with: PaymentError(), from: component)
         }
     }
     
@@ -137,21 +147,21 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details/") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("\(authToken!)", forHTTPHeaderField: "Authorization")
+        request.setValue("\(authToken ?? "")", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let json: [String: Any] = ["details": data.details.dictionaryRepresentation,"paymentData": data.paymentData]
+        let json: [String: Any] = ["details": data.details.encodable,"paymentData": data.paymentData]
         let jsonData = try? JSONSerialization.data(withJSONObject: json)
         request.httpBody = jsonData
         URLSession.shared.dataTask(with: request) { data, response, error in
-            if(data != nil) {
-                self.finish(data: data!, component: component)
+            if let data = data {
+                self.finish(data: data, component: component)
             }
             }.resume()
     }
     
     public func didFail(with error: Error, from component: DropInComponent) {
-       self.mResult!("CANCELLED")
+       self.mResult?("CANCELLED")
        DispatchQueue.global(qos: .background).async {
             
             // Background Thread

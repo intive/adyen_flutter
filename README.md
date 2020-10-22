@@ -1,4 +1,4 @@
-# flutter_adyen
+# adyen_flutter
 
 Note: This library is not official from Adyen.
 
@@ -31,16 +31,16 @@ X-API-KEY: AQEXXXXXXXXXXXXXXXX
 
 It's not recommended to store the API key in the front-end for security reasons!
 
-####You also need to have the:
+#### You also need to have the:
 * publicKey (from Adyen)
 * merchantAccount (from Adyen)
 * amount & currency 
 * shopperReference (e.g userId)
 * reference (e.g transactionId)
 
-##Setup
+## Setup
 
-###Android
+### Android
 Add this in your android/build.gradle
 
 ```
@@ -73,7 +73,7 @@ buildTypes {
        }
 ```
 
-###iOS
+### iOS
 You need to add a URL_SCHEME if you do not have one yet.
 
 [Here is how to add one.](https://developer.apple.com/documentation/uikit/inter-process_communication/allowing_apps_and_websites_to_link_to_your_content/defining_a_custom_url_scheme_for_your_app)
@@ -81,8 +81,9 @@ You need to add a URL_SCHEME if you do not have one yet.
 You might need to run this command `pod update Adyen/Card` in your ios folder.
 
 
-##Usage
+## Usage
 Just add this in your dart code
+
 ```
  const PAYMENT_SUCCESS = 'SUCCESS';
  const PAYMENT_CANCELLED = 'CANCELLED';
@@ -107,5 +108,6 @@ Just add this in your dart code
 
 ### Important to know
 The library expect your backend to provide the following endpoints as documented by Adyen:
- * https://YOURBACKEND/payment/payments/
- * https://YOURBACKEND/payment/payments/details/
+
+ * `https://YOURBACKEND/payment/payments/`
+ * `https://YOURBACKEND/payment/payments/details/`
