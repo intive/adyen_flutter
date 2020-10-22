@@ -1,8 +1,8 @@
 name: flutter_adyen
-description: Flutter plugin to integrate with the Android and iOS libraries of Adyen.
+description: Flutter plugin to integrate Adyen DropIn UI for Android and iOS.
 version: 0.2.3
-authors: [Junus Ergin <junus.ergin@petleo.net>, Karim Abdo <karim.abdo@petleo.net>, Bulent Hacioglu <buelent.hacioglu@petleo.net>]
-homepage: https://gitlab.com/petleo-and-iatros-opensource/flutter_adyen
+authors: [Benjamin Baumann <benjamin.baumann@intive.com>]
+homepage: https://github.com/intive-opensource/adyen_flutter
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
@@ -25,7 +25,7 @@ flutter:
   # be modified. They are used by the tooling to maintain consistency when
   # adding or updating assets for this project.
   plugin:
-    androidPackage: app.petleo.flutter_adyen
+    androidPackage: app.adyen.flutter_adyen
     pluginClass: FlutterAdyenPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

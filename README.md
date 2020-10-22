@@ -53,7 +53,7 @@ And in the AndroidManifest.xml in your application tag add this service, this al
 <application ...>
     ...
     <service
-           android:name="app.petleo.flutter_adyen.MyDropInService"
+           android:name="app.adyen.flutter_adyen.MyDropInService"
            android:permission="android.permission.BIND_JOB_SERVICE" />
 
 </application>

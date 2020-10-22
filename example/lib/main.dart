@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_adyen/flutter_adyen.dart';
 
 import 'mock_data.dart';
@@ -24,18 +25,22 @@ class _MyAppState extends State<MyApp> {
         floatingActionButton: FloatingActionButton(
           child: Icon(Icons.add),
           onPressed: () async {
-            dropInResponse = await FlutterAdyen.openDropIn(
-              paymentMethods: jsonEncode(examplePaymentMethods),
-              baseUrl: 'https://xxxxxxxxx/payment/',
-              authToken: 'Bearer AAABBBCCCDDD222111',
-              merchantAccount: 'YOURMERCHANTACCOUNTCOM',
-              publicKey: pubKey,
-              amount: '1230',
-              currency: 'EUR',
-              shopperReference:
-                  DateTime.now().millisecondsSinceEpoch.toString(),
-              reference: DateTime.now().millisecondsSinceEpoch.toString(),
-            );
+            try {
+              dropInResponse = await FlutterAdyen.openDropIn(
+                paymentMethods: jsonEncode(examplePaymentMethods),
+                baseUrl: 'https://xxxxxxxxx/payment/',
+                authToken: 'Bearer AAABBBCCCDDD222111',
+                merchantAccount: 'YOURMERCHANTACCOUNTCOM',
+                publicKey: pubKey,
+                amount: '1230',
+                currency: 'EUR',
+                shopperReference:
+                    DateTime.now().millisecondsSinceEpoch.toString(),
+                reference: DateTime.now().millisecondsSinceEpoch.toString(),
+              );
+            } on PlatformException {
+              dropInResponse = 'Failed to get platform version.';
+            }
 
             setState(() {
               _payment_result = dropInResponse;

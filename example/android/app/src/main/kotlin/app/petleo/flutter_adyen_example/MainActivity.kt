@@ -1,4 +1,4 @@
-package app.petleo.flutter_adyen_example
+package app.adyen.flutter_adyen_example
 
 import android.os.Bundle
 

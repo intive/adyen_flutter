@@ -6,7 +6,16 @@ class FlutterAdyen {
   static const MethodChannel _channel = const MethodChannel('flutter_adyen');
 
   static Future<String> openDropIn(
-      {paymentMethods, baseUrl, authToken, iosReturnUrl, merchantAccount, publicKey, amount, currency = 'EUR', reference, shopperReference}) async {
+      {paymentMethods,
+      baseUrl,
+      authToken,
+      iosReturnUrl,
+      merchantAccount,
+      publicKey,
+      amount,
+      currency = 'EUR',
+      reference,
+      shopperReference}) async {
     Map<String, dynamic> args = {};
     args.putIfAbsent('paymentMethods', () => paymentMethods);
     args.putIfAbsent('baseUrl', () => baseUrl);
@@ -20,6 +29,8 @@ class FlutterAdyen {
     args.putIfAbsent('shopperReference', () => shopperReference);
 
     final String response = await _channel.invokeMethod('openDropIn', args);
+    print("______________RESPONSE______________");
+    print(response);
     return response;
   }
 }

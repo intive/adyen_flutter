@@ -1,4 +1,4 @@
-group 'app.petleo.flutter_adyen'
+group 'app.adyen.flutter_adyen'
 version '1.0-SNAPSHOT'
 
 buildscript {
