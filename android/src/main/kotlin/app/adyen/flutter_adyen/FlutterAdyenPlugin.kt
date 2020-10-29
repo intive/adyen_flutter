@@ -46,7 +46,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler {
                 val baseUrl = call.argument<String>("baseUrl")
                 val authToken = call.argument<String>("authToken")
                 val merchantAccount = call.argument<String>("merchantAccount")
-                val pubKey = call.argument<String>("pubKey")
+                val clientKey = call.argument<String>("clientKey")
                 val amount = call.argument<String>("amount")
                 val currency = call.argument<String>("currency")
                 val reference = call.argument<String>("reference")
@@ -57,7 +57,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler {
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
                     val googlePayConfig = GooglePayConfiguration.Builder(activity, merchantAccount
                             ?: "").build()
-                    val cardConfiguration = CardConfiguration.Builder(activity, pubKey
+                    val cardConfiguration = CardConfiguration.Builder(activity, clientKey
                             ?: "").build()
                     val resultIntent = Intent(activity, activity::class.java)
                     resultIntent.putExtra("baseUrl", baseUrl)
@@ -136,24 +136,18 @@ class MyDropInService : DropInService() {
                 if (paymentsResponse.action != null) {
                     CallResult(CallResult.ResultType.ACTION, Action.SERIALIZER.serialize(paymentsResponse.action).toString())
                 } else {
-                    println("____EXCEPTION____8")
                     if (paymentsResponse.resultCode != null &&
                             (paymentsResponse.resultCode == "Authorised" || paymentsResponse.resultCode == "Received" || paymentsResponse.resultCode == "Pending")) {
                         CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode)
                     } else {
-                        println("____EXCEPTION____7")
                         CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode
                                 ?: "EMPTY")
                     }
                 }
             } else {
-                println("____EXCEPTION____6")
-
                 CallResult(CallResult.ResultType.ERROR, "IOException")
             }
         } catch (e: IOException) {
-            println("____EXCEPTION____5")
-
             CallResult(CallResult.ResultType.ERROR, "IOException")
         }
     }
@@ -170,21 +164,17 @@ class MyDropInService : DropInService() {
             val response = call.execute()
             val detailsResponse = response.body()
             if (response.isSuccessful && detailsResponse != null) {
-                println("____EXCEPTION____4")
                 if (detailsResponse.resultCode != null &&
                         (detailsResponse.resultCode == "Authorised" || detailsResponse.resultCode == "Received" || detailsResponse.resultCode == "Pending")) {
                     CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode)
                 } else {
-                    println("____EXCEPTION____3")
                     CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode
                             ?: "EMPTY")
                 }
             } else {
-                println("____EXCEPTION____2")
                 CallResult(CallResult.ResultType.ERROR, "IOException")
             }
         } catch (e: IOException) {
-            println("____EXCEPTION____1")
             CallResult(CallResult.ResultType.ERROR, "IOException")
         }
     }

@@ -31,7 +31,7 @@ class _MyAppState extends State<MyApp> {
                 baseUrl: 'https://xxxxxxxxx/payment/',
                 authToken: 'Bearer AAABBBCCCDDD222111',
                 merchantAccount: 'YOURMERCHANTACCOUNTCOM',
-                publicKey: pubKey,
+                clientKey: clientKey,
                 amount: '1230',
                 currency: 'EUR',
                 shopperReference:

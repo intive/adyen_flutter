@@ -20,7 +20,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var baseURL: String?
     var authToken: String?
     var merchantAccount: String?
-    var pubKey: String?
+    var clientKey: String?
     var currency: String?
     var amount: String?
     var returnUrl: String?
@@ -28,6 +28,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var reference: String?
     var mResult: FlutterResult?
     var topController: UIViewController?
+    var environment: String?
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard call.method.elementsEqual("openDropIn") else { return }
@@ -37,12 +38,13 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         baseURL = arguments?["baseUrl"] as? String
         authToken = arguments?["authToken"] as? String
         merchantAccount = arguments?["merchantAccount"] as? String
-        pubKey = arguments?["pubKey"] as? String
+        clientKey = arguments?["clientKey"] as? String
         currency = arguments?["currency"] as? String
         amount = arguments?["amount"] as? String
         returnUrl = arguments?["iosReturnUrl"] as? String
         shopperReference = arguments?["shopperReference"] as? String
         reference = arguments?["reference"] as? String
+        environment = arguments?["environment"] as? String
         mResult = result
         
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
@@ -51,10 +53,15 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         }
         
         let configuration = DropInComponent.PaymentMethodsConfiguration()
-        configuration.clientKey = pubKey
+        configuration.clientKey = clientKey
         dropInComponent = DropInComponent(paymentMethods: paymentMethods, paymentMethodsConfiguration: configuration)
         dropInComponent?.delegate = self
-        dropInComponent?.environment = .test
+        if(environment == "PROD") {
+            dropInComponent?.environment = .live
+        } else {
+            dropInComponent?.environment = .test
+        }
+        
         
         if var topController = UIApplication.shared.keyWindow?.rootViewController, let dropIn = dropInComponent {
             self.topController = topController
