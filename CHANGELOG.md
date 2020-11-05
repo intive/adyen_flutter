@@ -1,3 +1,7 @@
+## 0.3.0
+* complete refactor of android plugin version
+* complete refactor if iOS plugin version
+
 ## 0.2.6
 * fixed class cast exception on android
 
