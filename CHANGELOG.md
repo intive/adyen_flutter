@@ -1,3 +1,6 @@
+## 0.3.2
+* fixed another bug with payment amount on iOS
+
 ## 0.3.1
 * fixed bug with payment amount on iOS
 
