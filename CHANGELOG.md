@@ -1,3 +1,6 @@
+## 0.3.1
+* fixed bug with payment amount on iOS
+
 ## 0.3.0
 * complete refactor of android plugin version
 * complete refactor if iOS plugin version
