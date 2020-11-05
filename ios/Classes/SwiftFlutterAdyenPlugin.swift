@@ -7,7 +7,9 @@ import Foundation
 struct PaymentError: Error {
     
 }
-
+struct PaymentCancelled: Error {
+    
+}
 public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -29,6 +31,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var mResult: FlutterResult?
     var topController: UIViewController?
     var environment: String?
+    var lineItemJson: [String: String]?
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard call.method.elementsEqual("openDropIn") else { return }
@@ -36,30 +39,31 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         let arguments = call.arguments as? [String: Any]
         let paymentMethodsResponse = arguments?["paymentMethods"] as? String
         baseURL = arguments?["baseUrl"] as? String
-        authToken = arguments?["authToken"] as? String
-        merchantAccount = arguments?["merchantAccount"] as? String
+        
         clientKey = arguments?["clientKey"] as? String
         currency = arguments?["currency"] as? String
         amount = arguments?["amount"] as? String
-        returnUrl = arguments?["iosReturnUrl"] as? String
-        shopperReference = arguments?["shopperReference"] as? String
-        reference = arguments?["reference"] as? String
+        lineItemJson = arguments?["lineItem"] as? [String: String]
         environment = arguments?["environment"] as? String
         mResult = result
         
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
-            let paymentMethods = try? JSONDecoder().decode(PaymentMethods.self, from: paymentData) else {
-                return
+              let paymentMethods = try? JSONDecoder().decode(PaymentMethods.self, from: paymentData) else {
+            return
         }
         
         let configuration = DropInComponent.PaymentMethodsConfiguration()
         configuration.clientKey = clientKey
         dropInComponent = DropInComponent(paymentMethods: paymentMethods, paymentMethodsConfiguration: configuration)
         dropInComponent?.delegate = self
-        if(environment == "PROD") {
-            dropInComponent?.environment = .live
-        } else {
-            dropInComponent?.environment = .test
+        dropInComponent?.environment = .test
+        
+        if(environment == "LIVE_US") {
+            dropInComponent?.environment = .liveUnitedStates
+        } else if (environment == "LIVE_AUSTRALIA"){
+            dropInComponent?.environment = .liveAustralia
+        } else if (environment == "LIVE_EUROPE"){
+            dropInComponent?.environment = .liveEurope
         }
         
         
@@ -75,78 +79,71 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
 
 extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     
+    public func didCancel(component: PresentableComponent, from dropInComponent: DropInComponent) {
+        self.didFail(with: PaymentCancelled(), from: dropInComponent)
+    }
+    
     public func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/") else { return }
+        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("\(authToken ?? "")", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let amountAsDouble = Double(amount ?? "0.0")
         // prepare json data
         let paymentMethod = data.paymentMethod.encodable
-        let json: [String: Any] = ["paymentMethod": paymentMethod,
-                                   "amount": ["currency":currency ?? "", "value":amountAsDouble ?? 0.0],
-                                   "channel": "iOS",
-                                   "merchantAccount": merchantAccount ?? "",
-                                   "reference": reference ?? "",
-                                   "returnUrl": returnUrl ?? "" + "://",
-                                   "storePaymentMethod": false,
-                                   "additionalData": ["allow3DS2":"false"]]
+        let lineItem = try? JSONDecoder().decode(LineItem.self, from: JSONSerialization.data(withJSONObject: lineItemJson ?? ["":""]) )
+        if lineItem == nil {
+            self.didFail(with: PaymentError(), from: component)
+            return
+        }
+        let paymentRequest = PaymentRequest(paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsDouble ?? 0.0)
         
         do {
-            if JSONSerialization.isValidJSONObject(json) {
-                let jsonData = try JSONSerialization.data(withJSONObject: json)
-                request.httpBody = jsonData
-                URLSession.shared.dataTask(with: request) { data, response, error in
-                    if let data = data {
-                        self.finish(data: data, component: component)
-                    }
-                    }.resume()
-            } else {
-                didFail(with: PaymentError(), from: component)
-            }
+            let jsonData = try JSONEncoder().encode(paymentRequest)
+            
+            request.httpBody = jsonData
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let data = data {
+                    self.finish(data: data, component: component)
+                }
+                if let error = error {
+                    self.didFail(with: PaymentError(), from: component)
+                }
+            }.resume()
+            
             
         } catch {
             didFail(with: PaymentError(), from: component)
         }
-
+        
     }
     
     func finish(data: Data, component: DropInComponent) {
         let paymentResponseJson = ((try? JSONSerialization.jsonObject(with: data, options: .allowFragments) as? Dictionary<String,Any>) as Dictionary<String, Any>??)
-       
-        if let dict = paymentResponseJson, let action = dict?["action"] {
+        DispatchQueue.main.async {
+            if let dict = paymentResponseJson, let action = dict?["action"] {
                 let act = try? JSONDecoder().decode(Action.self, from: JSONSerialization.data(withJSONObject: action, options: .sortedKeys))
                 if let act = act {
                     component.handle(act)
                 }
-        } else if let dict = paymentResponseJson, let resultCode = dict?["resultCode"] as? String {
+            } else if let dict = paymentResponseJson, let resultCode = dict?["resultCode"] as? String {
                 let success = resultCode == "Authorised" || resultCode == "Received" || resultCode == "Pending"
                 component.stopLoading()
                 if success, let result = self.mResult {
-                    result("SUCCESS")
-                    DispatchQueue.global(qos: .background).async {
-                        
-                        // Background Thread
-                        DispatchQueue.main.async {
-                            self.topController?.dismiss(animated: false, completion: nil)
-                        }
-                    }
+                    
+                    result(resultCode)
+                    self.topController?.dismiss(animated: false, completion: nil)
+                    
                 } else {
-                    self.mResult?("Failed with result code \(String(describing: resultCode))")
-                    DispatchQueue.global(qos: .background).async {
-                        
-                        // Background Thread
-                        
-                        DispatchQueue.main.async {
-                            self.topController?.dismiss(animated: false, completion: nil)
-                        }
+                    DispatchQueue.main.async {
+                        self.mResult?(resultCode)
+                        self.topController?.dismiss(animated: false, completion: nil)
                     }
-                
+                }
+            } else {
+                self.didFail(with: PaymentError(), from: component)
             }
-        } else {
-            didFail(with: PaymentError(), from: component)
         }
     }
     
@@ -154,7 +151,6 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details/") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("\(authToken ?? "")", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let json: [String: Any] = ["details": data.details.encodable,"paymentData": data.paymentData]
@@ -164,42 +160,45 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             if let data = data {
                 self.finish(data: data, component: component)
             }
-            }.resume()
+        }.resume()
     }
     
     public func didFail(with error: Error, from component: DropInComponent) {
-       self.mResult?("CANCELLED")
-       DispatchQueue.global(qos: .background).async {
-            
-            // Background Thread
-            
-            DispatchQueue.main.async {
-                self.topController?.dismiss(animated: false, completion: nil)
+        
+        DispatchQueue.main.async {
+            if let error = error as? ComponentError, error == ComponentError.cancelled {
+                self.mResult?("PAYMENT_CANCELLED")
+            }else {
+                self.mResult?("PAYMENT_ERROR")
             }
+            self.topController?.dismiss(animated: false, completion: nil)
         }
     }
 }
 
-extension UIViewController: PaymentComponentDelegate {
+struct PaymentRequest : Encodable {
+    let paymentMethod: AnyEncodable
+    let lineItems: [LineItem]
+    let channel: String = "iOS"
+    let storePaymentMethod = "false"
+    let additionalData = ["allow3DS2":"false"]
+    let amount: Amount
     
-    public func didSubmit(_ data: PaymentComponentData, from component: PaymentComponent) {
-        //performPayment(with: public  }
-    }
-    
-    public func didFail(with error: Error, from component: PaymentComponent) {
-        //performPayment(with: public  }
+    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Double) {
+        self.paymentMethod = paymentMethod
+        self.lineItems = [lineItem]
+        self.amount = Amount(currency: currency, amount: amount)
     }
     
 }
 
-extension UIViewController: ActionComponentDelegate {
-    
-    public func didFail(with error: Error, from component: ActionComponent) {
-        //performPayment(with: public  }
-    }
-    
-    public func didProvide(_ data: ActionComponentData, from component: ActionComponent) {
-        //performPayment(with: public  }
-    }
-    
+struct LineItem: Codable {
+    let id: String
+    let description: String
 }
+
+struct Amount: Codable {
+    let currency: String
+    let amount: Double
+}
+
