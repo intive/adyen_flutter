@@ -187,7 +187,7 @@ struct PaymentRequest : Encodable {
     init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int) {
         self.paymentMethod = paymentMethod
         self.lineItems = [lineItem]
-        self.amount = Amount(currency: currency, amount: amount)
+        self.amount = Amount(currency: currency, value: amount)
     }
     
 }
@@ -199,6 +199,6 @@ struct LineItem: Codable {
 
 struct Amount: Codable {
     let currency: String
-    let amount: Int
+    let value: Int
 }
 
