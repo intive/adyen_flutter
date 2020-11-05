@@ -89,7 +89,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let amountAsDouble = Double(amount ?? "0.0")
+        let amountAsInt = Int(amount ?? "0")
         // prepare json data
         let paymentMethod = data.paymentMethod.encodable
         let lineItem = try? JSONDecoder().decode(LineItem.self, from: JSONSerialization.data(withJSONObject: lineItemJson ?? ["":""]) )
@@ -97,7 +97,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             self.didFail(with: PaymentError(), from: component)
             return
         }
-        let paymentRequest = PaymentRequest(paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsDouble ?? 0.0)
+        let paymentRequest = PaymentRequest(paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0)
         
         do {
             let jsonData = try JSONEncoder().encode(paymentRequest)
@@ -184,7 +184,7 @@ struct PaymentRequest : Encodable {
     let additionalData = ["allow3DS2":"false"]
     let amount: Amount
     
-    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Double) {
+    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int) {
         self.paymentMethod = paymentMethod
         self.lineItems = [lineItem]
         self.amount = Amount(currency: currency, amount: amount)
@@ -199,6 +199,6 @@ struct LineItem: Codable {
 
 struct Amount: Codable {
     let currency: String
-    let amount: Double
+    let amount: Int
 }
 
