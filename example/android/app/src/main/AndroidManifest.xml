@@ -32,7 +32,7 @@
         </activity>
 
         <service
-            android:name="app.adyen.flutter_adyen.MyDropInService"
+            android:name="app.adyen.flutter_adyen.AdyenDropinService"
             android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 </manifest>

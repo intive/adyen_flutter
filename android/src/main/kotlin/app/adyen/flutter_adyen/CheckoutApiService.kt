@@ -25,7 +25,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface CheckoutApiService {
-    @POST("payments/")
+    @POST("payments")
     fun payments(@Body paymentsRequest: RequestBody): Call<PaymentsApiResponse>
 
     @POST("payments/details/")
@@ -45,7 +45,6 @@ fun getService(headers: HashMap<String, String>, baseUrl: String): CheckoutApiSe
             .add(PolymorphicJsonAdapterFactory.of(PaymentMethodDetails::class.java, PaymentMethodDetails.TYPE)
                     .withSubtype(CardPaymentMethod::class.java, CardPaymentMethod.PAYMENT_METHOD_TYPE)
                     .withSubtype(IdealPaymentMethod::class.java, IdealPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(MolpayPaymentMethod::class.java, MolpayPaymentMethod.PAYMENT_METHOD_TYPE)
                     .withSubtype(EPSPaymentMethod::class.java, EPSPaymentMethod.PAYMENT_METHOD_TYPE)
                     .withSubtype(DotpayPaymentMethod::class.java, DotpayPaymentMethod.PAYMENT_METHOD_TYPE)
                     .withSubtype(EntercashPaymentMethod::class.java, EntercashPaymentMethod.PAYMENT_METHOD_TYPE)

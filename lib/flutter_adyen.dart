@@ -7,27 +7,23 @@ class FlutterAdyen {
 
   static Future<String> openDropIn(
       {paymentMethods,
-      baseUrl,
-      authToken,
-      iosReturnUrl,
-      merchantAccount,
-      clientKey,
-      amount,
-      currency,
-      reference,
-      shopperReference,
+      String baseUrl,
+      String clientKey,
+      String publicKey,
+      lineItem,
+      String locale,
+      String amount,
+      String currency,
       environment = 'TEST'}) async {
     Map<String, dynamic> args = {};
     args.putIfAbsent('paymentMethods', () => paymentMethods);
     args.putIfAbsent('baseUrl', () => baseUrl);
-    args.putIfAbsent('authToken', () => authToken);
-    args.putIfAbsent('iosReturnUrl', () => iosReturnUrl);
-    args.putIfAbsent('merchantAccount', () => merchantAccount);
     args.putIfAbsent('clientKey', () => clientKey);
+    args.putIfAbsent('publicKey', () => publicKey);
     args.putIfAbsent('amount', () => amount);
+    args.putIfAbsent('locale', () => locale);
     args.putIfAbsent('currency', () => currency);
-    args.putIfAbsent('reference', () => reference);
-    args.putIfAbsent('shopperReference', () => shopperReference);
+    args.putIfAbsent('lineItem', () => lineItem);
     args.putIfAbsent('environment', () => environment);
 
     final String response = await _channel.invokeMethod('openDropIn', args);

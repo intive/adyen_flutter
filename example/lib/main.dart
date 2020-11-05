@@ -27,25 +27,24 @@ class _MyAppState extends State<MyApp> {
           onPressed: () async {
             try {
               dropInResponse = await FlutterAdyen.openDropIn(
-                paymentMethods: jsonEncode(examplePaymentMethods),
-                baseUrl: 'https://xxxxxxxxx/payment/',
-                authToken: 'Bearer AAABBBCCCDDD222111',
-                merchantAccount: 'YOURMERCHANTACCOUNTCOM',
-                clientKey: clientKey,
-                amount: '1230',
-                currency: 'EUR',
-                shopperReference:
-                    DateTime.now().millisecondsSinceEpoch.toString(),
-                reference: DateTime.now().millisecondsSinceEpoch.toString(),
-              );
-            } on PlatformException {
-              dropInResponse = 'Failed to get platform version.';
+                  paymentMethods: jsonEncode(examplePaymentMethods),
+                  baseUrl: 'https://yourbackendurl.com/',
+                  clientKey: 'clientKey',
+                  publicKey: 'publicKey',
+                  locale: 'de_DE',
+                  amount: '1230',
+                  lineItem: {'id': '1', 'description': 'adyen test'},
+                  currency: 'EUR');
+            } on PlatformException catch (e) {
+              if (e.code == 'PAYMENT_CANCELLED')
+                dropInResponse = 'Payment Cancelled';
+              else
+                dropInResponse = 'Payment Error';
             }
 
             setState(() {
               _payment_result = dropInResponse;
             });
-            setState(() {});
           },
         ),
         appBar: AppBar(
