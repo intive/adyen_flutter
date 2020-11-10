@@ -28,7 +28,7 @@ interface CheckoutApiService {
     @POST("payments")
     fun payments(@Body paymentsRequest: RequestBody): Call<PaymentsApiResponse>
 
-    @POST("payments/details/")
+    @POST("payments/details")
     fun details(@Body detailsRequest: RequestBody): Call<PaymentsApiResponse>
 }
 

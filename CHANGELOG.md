@@ -1,3 +1,6 @@
+## 0.3.3
+* changed android paths
+
 ## 0.3.2
 * fixed another bug with payment amount on iOS
 
