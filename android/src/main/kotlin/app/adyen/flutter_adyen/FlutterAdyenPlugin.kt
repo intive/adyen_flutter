@@ -59,6 +59,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<Map<String, String>>("lineItem")
                 val reference = call.argument<String>("reference")
+                val shopperReference = call.argument<String>("shopperReference")
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
@@ -93,6 +94,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                         putString("currency", currency)
                         putString("lineItem", lineItemString)
                         putString("reference", reference)
+                        putString("shopperReference", shopperReference)
                         commit()
                     }
 
@@ -148,6 +150,7 @@ class AdyenDropinService : DropInService() {
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
         val reference = sharedPref.getString("reference", "UNDEFINED_STR")
+        val shopperReference = sharedPref.getString("shopperReference", "UNDEFINED_STR")
 
         val moshi = Moshi.Builder().build()
         val jsonAdapter = moshi.adapter(LineItem::class.java)
@@ -159,7 +162,7 @@ class AdyenDropinService : DropInService() {
             return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(this@AdyenDropinService, lineItem, serializedPaymentComponentData, amount
-                ?: "", currency ?: "", reference ?: "")
+                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference ?: "")
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
@@ -219,15 +222,20 @@ class AdyenDropinService : DropInService() {
 }
 
 
-fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String): PaymentsRequest {
+fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String, shopperReference: String?): PaymentsRequest {
     @Suppress("UsePropertyAccessSyntax")
+    var sreference: String? = null
+    if (paymentComponentData.isStorePaymentMethodEnable) {
+        sreference = shopperReference
+    }
     return PaymentsRequest(
             paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
             paymentComponentData.isStorePaymentMethodEnable,
             getAmount(amount, currency),
             reference,
             RedirectComponent.getReturnUrl(context),
-            lineItems = listOf(lineItem)
+            lineItems = listOf(lineItem),
+            shopperReference = sreference
 
     )
 }
@@ -249,7 +257,8 @@ data class PaymentsRequest(
         val returnUrl: String,
         val channel: String = "android",
         val lineItems: List<LineItem?>,
-        val additionalData: AdditionalData = AdditionalData(allow3DS2 = "false")
+        val additionalData: AdditionalData = AdditionalData(allow3DS2 = "false"),
+        val shopperReference: String?
 )
 data class LineItem(
         val id: String,

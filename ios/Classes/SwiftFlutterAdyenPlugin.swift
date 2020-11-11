@@ -30,6 +30,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var mResult: FlutterResult?
     var topController: UIViewController?
     var environment: String?
+    var shopperReference: String?
     var lineItemJson: [String: String]?
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -46,6 +47,8 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         environment = arguments?["environment"] as? String
         reference = arguments?["reference"] as? String
         returnUrl = arguments?["returnUrl"] as? String
+        shopperReference = arguments?["shopperReference"] as? String
+        
         mResult = result
         
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
@@ -98,7 +101,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             self.didFail(with: PaymentError(), from: component)
             return
         }
-        let paymentRequest = PaymentRequest( paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0,reference: reference ?? "", returnUrl: returnUrl ?? "")
+        let paymentRequest = PaymentRequest( paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0,reference: reference ?? "", returnUrl: returnUrl ?? "", storePayment: data.storePaymentMethod, shopperReference: shopperReference)
 
         do {
             let jsonData = try JSONEncoder().encode(paymentRequest)
@@ -181,18 +184,19 @@ struct PaymentRequest : Encodable {
     let paymentMethod: AnyEncodable
     let lineItems: [LineItem]
     let channel: String = "iOS"
-    let storePaymentMethod = "false"
     let additionalData = ["allow3DS2":"false"]
     let amount: Amount
     let reference: String
     let returnUrl: String
+    let shopperReference: String?
     
-    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int, reference: String, returnUrl: String) {
+    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int, reference: String, returnUrl: String, storePayment: Bool, shopperReference: String?) {
         self.paymentMethod = paymentMethod
         self.lineItems = [lineItem]
         self.amount = Amount(currency: currency, value: amount)
         self.reference = reference
         self.returnUrl = returnUrl
+        if(storePayment) {self.shopperReference = shopperReference} else {self.shopperReference = nil}
     }
     
 }

@@ -33,6 +33,7 @@ class _MyAppState extends State<MyApp> {
                   publicKey: 'publicKey',
                   locale: 'de_DE',
                   reference: 'asd',
+                  shopperReference: 'asdasda',
                   returnUrl: 'http://asd.de',
                   amount: '1230',
                   lineItem: {'id': '1', 'description': 'adyen test'},
