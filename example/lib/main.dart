@@ -32,6 +32,8 @@ class _MyAppState extends State<MyApp> {
                   clientKey: 'clientKey',
                   publicKey: 'publicKey',
                   locale: 'de_DE',
+                  reference: 'asd',
+                  returnUrl: 'http://asd.de',
                   amount: '1230',
                   lineItem: {'id': '1', 'description': 'adyen test'},
                   currency: 'EUR');

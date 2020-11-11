@@ -26,7 +26,6 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var currency: String?
     var amount: String?
     var returnUrl: String?
-    var shopperReference: String?
     var reference: String?
     var mResult: FlutterResult?
     var topController: UIViewController?
@@ -45,6 +44,8 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         amount = arguments?["amount"] as? String
         lineItemJson = arguments?["lineItem"] as? [String: String]
         environment = arguments?["environment"] as? String
+        reference = arguments?["reference"] as? String
+        returnUrl = arguments?["returnUrl"] as? String
         mResult = result
         
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
@@ -97,8 +98,8 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             self.didFail(with: PaymentError(), from: component)
             return
         }
-        let paymentRequest = PaymentRequest(paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0)
-        
+        let paymentRequest = PaymentRequest( paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0,reference: reference ?? "", returnUrl: returnUrl ?? "")
+
         do {
             let jsonData = try JSONEncoder().encode(paymentRequest)
             
@@ -183,11 +184,15 @@ struct PaymentRequest : Encodable {
     let storePaymentMethod = "false"
     let additionalData = ["allow3DS2":"false"]
     let amount: Amount
+    let reference: String
+    let returnUrl: String
     
-    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int) {
+    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int, reference: String, returnUrl: String) {
         self.paymentMethod = paymentMethod
         self.lineItems = [lineItem]
         self.amount = Amount(currency: currency, value: amount)
+        self.reference = reference
+        self.returnUrl = returnUrl
     }
     
 }

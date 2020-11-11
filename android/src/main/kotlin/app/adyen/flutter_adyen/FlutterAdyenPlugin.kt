@@ -58,6 +58,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                 val currency = call.argument<String>("currency")
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<Map<String, String>>("lineItem")
+                val reference = call.argument<String>("reference")
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
@@ -91,6 +92,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                         putString("amount", "$amount")
                         putString("currency", currency)
                         putString("lineItem", lineItemString)
+                        putString("reference", reference)
                         commit()
                     }
 
@@ -145,6 +147,7 @@ class AdyenDropinService : DropInService() {
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
+        val reference = sharedPref.getString("reference", "UNDEFINED_STR")
 
         val moshi = Moshi.Builder().build()
         val jsonAdapter = moshi.adapter(LineItem::class.java)
@@ -156,7 +159,7 @@ class AdyenDropinService : DropInService() {
             return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(this@AdyenDropinService, lineItem, serializedPaymentComponentData, amount
-                ?: "", currency ?: "")
+                ?: "", currency ?: "", reference ?: "")
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
@@ -216,14 +219,16 @@ class AdyenDropinService : DropInService() {
 }
 
 
-fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String): PaymentsRequest {
+fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String): PaymentsRequest {
     @Suppress("UsePropertyAccessSyntax")
     return PaymentsRequest(
             paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
             paymentComponentData.isStorePaymentMethodEnable,
             getAmount(amount, currency),
+            reference,
             RedirectComponent.getReturnUrl(context),
             lineItems = listOf(lineItem)
+
     )
 }
 
@@ -240,6 +245,7 @@ data class PaymentsRequest(
         val paymentMethod: PaymentMethodDetails,
         val storePaymentMethod: Boolean,
         val amount: Amount,
+        val reference: String,
         val returnUrl: String,
         val channel: String = "android",
         val lineItems: List<LineItem?>,
