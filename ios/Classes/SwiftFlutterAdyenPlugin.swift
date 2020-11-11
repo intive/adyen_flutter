@@ -152,19 +152,28 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
     
     public func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
-        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details/") else { return }
+        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let json: [String: Any] = ["details": data.details.encodable,"paymentData": data.paymentData]
-        let jsonData = try? JSONSerialization.data(withJSONObject: json)
-        request.httpBody = jsonData
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                self.finish(data: data, component: component)
-            }
-        }.resume()
+        let detailsRequest = DetailsRequest(paymentData: data.paymentData, details: data.details.encodable)
+        do {
+            let detailsRequestData = try JSONEncoder().encode(detailsRequest)
+            request.httpBody = detailsRequestData
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let response = response as? HTTPURLResponse {
+                    if (response.statusCode != 200) {
+                        self.didFail(with: PaymentError(), from: component)
+                    }
+                }
+                if let data = data {
+                    self.finish(data: data, component: component)
+                }
+                
+            }.resume()
+        } catch {
+            self.didFail(with: PaymentError(), from: component)
+        }
     }
     
     public func didFail(with error: Error, from component: DropInComponent) {
@@ -178,6 +187,11 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             self.topController?.dismiss(animated: false, completion: nil)
         }
     }
+}
+
+struct DetailsRequest: Encodable {
+    let paymentData: String
+    let details: AnyEncodable
 }
 
 struct PaymentRequest : Encodable {
