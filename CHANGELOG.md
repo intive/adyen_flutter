@@ -1,3 +1,6 @@
+## 0.3.5
+* added shopperReference and enabled "store for later"
+
 ## 0.3.4
 * added reference and return url
 

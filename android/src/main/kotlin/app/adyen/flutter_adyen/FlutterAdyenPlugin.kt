@@ -150,7 +150,7 @@ class AdyenDropinService : DropInService() {
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
         val reference = sharedPref.getString("reference", "UNDEFINED_STR")
-        val shopperReference = sharedPref.getString("shopperReference", "UNDEFINED_STR")
+        val shopperReference = sharedPref.getString("shopperReference", null)
 
         val moshi = Moshi.Builder().build()
         val jsonAdapter = moshi.adapter(LineItem::class.java)
@@ -162,7 +162,7 @@ class AdyenDropinService : DropInService() {
             return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(this@AdyenDropinService, lineItem, serializedPaymentComponentData, amount
-                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference ?: "")
+                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference)
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
@@ -228,6 +228,7 @@ fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponen
     if (paymentComponentData.isStorePaymentMethodEnable) {
         sreference = shopperReference
     }
+
     return PaymentsRequest(
             paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
             paymentComponentData.isStorePaymentMethodEnable,
