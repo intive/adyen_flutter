@@ -1,3 +1,6 @@
+## 0.3.6
+* fixed handling of certain cancel events
+
 ## 0.3.5
 * added shopperReference and enabled "store for later"
 
