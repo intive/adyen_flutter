@@ -177,16 +177,18 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
     
     public func didFail(with error: Error, from component: DropInComponent) {
-        
-        DispatchQueue.main.async {
-            if let error = error as? ComponentError, error == ComponentError.cancelled {
-                self.mResult?("PAYMENT_CANCELLED")
-            }else {
-                self.mResult?("PAYMENT_ERROR")
+
+            DispatchQueue.main.async {
+                if (error is PaymentCancelled) {
+                    self.mResult?("PAYMENT_CANCELLED")
+                } else if let componentError = error as? ComponentError, componentError == ComponentError.cancelled {
+                    self.mResult?("PAYMENT_CANCELLED")
+                }else {
+                    self.mResult?("PAYMENT_ERROR")
+                }
+                self.topController?.dismiss(animated: true, completion: nil)
             }
-            self.topController?.dismiss(animated: false, completion: nil)
         }
-    }
 }
 
 struct DetailsRequest: Encodable {
