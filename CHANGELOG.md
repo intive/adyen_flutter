@@ -1,3 +1,6 @@
+## 0.3.7
+* fixed handling of a cancel even on Android
+
 ## 0.3.6
 * fixed handling of certain cancel events
 

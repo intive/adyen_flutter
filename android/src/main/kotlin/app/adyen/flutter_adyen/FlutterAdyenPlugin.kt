@@ -118,7 +118,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (this.resultCode == null) {
-            flutterResult?.error("PAYMENT_CANCELLED", "PAYMENT_CANCELLED", "PAYMENT_CANCELLED")
+            flutterResult?.success("PAYMENT_CANCELLED")
             return true
         }
         return true
@@ -128,6 +128,8 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
         if (intent?.hasExtra(DropIn.RESULT_KEY) == true) {
             resultCode = intent.getStringExtra(DropIn.RESULT_KEY)
             flutterResult?.success(resultCode)
+        } else {
+            flutterResult?.success("PAYMENT_CANCELLED")
         }
         return true
     }
