@@ -25,6 +25,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import java.util.UUID
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
@@ -57,7 +58,6 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                 val currency = call.argument<String>("currency")
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<Map<String, String>>("lineItem")
-                val reference = call.argument<String>("reference")
                 val shopperReference = call.argument<String>("shopperReference")
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
@@ -93,7 +93,6 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                         putString("amount", "$amount")
                         putString("currency", currency)
                         putString("lineItem", lineItemString)
-                        putString("reference", reference)
                         putString("shopperReference", shopperReference)
                         commit()
                     }
@@ -142,7 +141,8 @@ class AdyenDropinService : DropInService() {
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
-        val reference = sharedPref.getString("reference", "UNDEFINED_STR")
+        val uuid: UUID = UUID.randomUUID()
+        val reference: String = uuid.toString()
         val shopperReference = sharedPref.getString("shopperReference", null)
 
         val moshi = Moshi.Builder().build()

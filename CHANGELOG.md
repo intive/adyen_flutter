@@ -1,4 +1,7 @@
 ## 0.3.9
+* moved reference from outside to inside
+
+## 0.3.9
 * sending shopper reference with every call
 
 ## 0.3.8
