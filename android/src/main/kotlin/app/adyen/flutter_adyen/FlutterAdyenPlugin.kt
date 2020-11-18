@@ -3,6 +3,7 @@ package app.adyen.flutter_adyen
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import com.adyen.checkout.afterpay.AfterPayConfiguration
 import com.adyen.checkout.base.model.PaymentMethodsApiResponse
 import com.adyen.checkout.base.model.payments.Amount
 import com.adyen.checkout.base.model.payments.request.*
@@ -31,9 +32,8 @@ import java.io.IOException
 import java.io.Serializable
 
 
-class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener, PluginRegistry.NewIntentListener {
+class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener {
     var flutterResult: Result? = null
-    var resultCode: String? = null
 
     companion object {
         @JvmStatic
@@ -42,7 +42,6 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
             val plugin = FlutterAdyenPlugin(registrar.activity())
             channel.setMethodCallHandler(plugin)
             registrar.addActivityResultListener(plugin)
-            registrar.addNewIntentListener(plugin)
         }
     }
 
@@ -89,6 +88,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
 
                     val sharedPref = activity.getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
                     with(sharedPref.edit()) {
+                        remove("AdyenResultCode")
                         putString("baseUrl", baseUrl)
                         putString("amount", "$amount")
                         putString("currency", currency)
@@ -117,22 +117,13 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (this.resultCode == null) {
-            flutterResult?.success("PAYMENT_CANCELLED")
-            return true
-        }
+        val sharedPref = activity.getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
+        val storedResultCode = sharedPref.getString("AdyenResultCode", "PAYMENT_CANCELLED")
+        flutterResult?.success(storedResultCode)
+        flutterResult = null;
         return true
     }
 
-    override fun onNewIntent(intent: Intent?): Boolean {
-        if (intent?.hasExtra(DropIn.RESULT_KEY) == true) {
-            resultCode = intent.getStringExtra(DropIn.RESULT_KEY)
-            flutterResult?.success(resultCode)
-        } else {
-            flutterResult?.success("PAYMENT_CANCELLED")
-        }
-        return true
-    }
 }
 
 /**
@@ -178,20 +169,40 @@ class AdyenDropinService : DropInService() {
 
             if (response.isSuccessful && paymentsResponse != null) {
                 if (paymentsResponse.action != null) {
+                    with(sharedPref.edit()) {
+                        putString("AdyenResultCode", paymentsResponse.action.toString())
+                        commit()
+                    }
                     CallResult(CallResult.ResultType.ACTION, Action.SERIALIZER.serialize(paymentsResponse.action).toString())
                 } else {
                     if (paymentsResponse.resultCode != null &&
                             (paymentsResponse.resultCode == "Authorised" || paymentsResponse.resultCode == "Received" || paymentsResponse.resultCode == "Pending")) {
+                        with(sharedPref.edit()) {
+                            putString("AdyenResultCode", paymentsResponse.resultCode)
+                            commit()
+                        }
                         CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode)
                     } else {
+                        with(sharedPref.edit()) {
+                            putString("AdyenResultCode", paymentsResponse.resultCode ?: "EMPTY")
+                            commit()
+                        }
                         CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode
                                 ?: "EMPTY")
                     }
                 }
             } else {
+                with(sharedPref.edit()) {
+                    putString("AdyenResultCode", "ERROR")
+                    commit()
+                }
                 CallResult(CallResult.ResultType.ERROR, "IOException")
             }
         } catch (e: IOException) {
+            with(sharedPref.edit()) {
+                putString("AdyenResultCode", "ERROR")
+                commit()
+            }
             CallResult(CallResult.ResultType.ERROR, "IOException")
         }
     }
@@ -209,15 +220,31 @@ class AdyenDropinService : DropInService() {
             if (response.isSuccessful && detailsResponse != null) {
                 if (detailsResponse.resultCode != null &&
                         (detailsResponse.resultCode == "Authorised" || detailsResponse.resultCode == "Received" || detailsResponse.resultCode == "Pending")) {
+                    with(sharedPref.edit()) {
+                        putString("AdyenResultCode", detailsResponse.resultCode)
+                        commit()
+                    }
                     CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode)
                 } else {
+                    with(sharedPref.edit()) {
+                        putString("AdyenResultCode", detailsResponse.resultCode ?: "EMPTY")
+                        commit()
+                    }
                     CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode
                             ?: "EMPTY")
                 }
             } else {
+                with(sharedPref.edit()) {
+                    putString("AdyenResultCode", "ERROR")
+                    commit()
+                }
                 CallResult(CallResult.ResultType.ERROR, "IOException")
             }
         } catch (e: IOException) {
+            with(sharedPref.edit()) {
+                putString("AdyenResultCode", "ERROR")
+                commit()
+            }
             CallResult(CallResult.ResultType.ERROR, "IOException")
         }
     }
@@ -233,6 +260,7 @@ fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponen
 
     return PaymentsRequest(
             paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
+            "DE",
             paymentComponentData.isStorePaymentMethodEnable,
             getAmount(amount, currency),
             reference,
@@ -254,11 +282,12 @@ fun createAmount(value: Int, currency: String): Amount {
 
 data class PaymentsRequest(
         val paymentMethod: PaymentMethodDetails,
+        val countryCode: String = "DE",
         val storePaymentMethod: Boolean,
         val amount: Amount,
         val reference: String,
         val returnUrl: String,
-        val channel: String = "android",
+        val channel: String = "Android",
         val lineItems: List<LineItem?>,
         val additionalData: AdditionalData = AdditionalData(allow3DS2 = "false"),
         val shopperReference: String?
