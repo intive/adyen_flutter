@@ -253,11 +253,6 @@ class AdyenDropinService : DropInService() {
 
 fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String, shopperReference: String?): PaymentsRequest {
     @Suppress("UsePropertyAccessSyntax")
-    var sreference: String? = null
-    if (paymentComponentData.isStorePaymentMethodEnable) {
-        sreference = shopperReference
-    }
-
     return PaymentsRequest(
             paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
             "DE",
@@ -266,7 +261,7 @@ fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponen
             reference,
             RedirectComponent.getReturnUrl(context),
             lineItems = listOf(lineItem),
-            shopperReference = sreference
+            shopperReference = shopperReference
 
     )
 }

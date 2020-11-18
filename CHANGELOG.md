@@ -1,7 +1,9 @@
+## 0.3.9
+* sending shopper reference with every call
+
 ## 0.3.8
 * changed handling of results
 * sending countryCode
-
 
 ## 0.3.7
 * fixed handling of a cancel even on Android
