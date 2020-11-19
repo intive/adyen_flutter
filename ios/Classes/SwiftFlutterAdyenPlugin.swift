@@ -127,26 +127,26 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
 
     func finish(data: Data, component: DropInComponent) {
         DispatchQueue.main.async {
-        guard let response = try? JSONDecoder().decode(PaymentsResponse.self, from: data) else {
-            self.didFail(with: PaymentError(), from: component)
-            return
-        }
-        if let action = response.action {
-            component.stopLoading()
-            component.handle(action)
-        } else {
-            component.stopLoading()
-            if response.resultCode == .authorised || response.resultCode == .received || response.resultCode == .pending, let result = self.mResult {
-                result(response.resultCode.rawValue)
-                self.topController?.dismiss(animated: false, completion: nil)
-
+            guard let response = try? JSONDecoder().decode(PaymentsResponse.self, from: data) else {
+                self.didFail(with: PaymentError(), from: component)
+                return
+            }
+            if let action = response.action {
+                component.stopLoading()
+                component.handle(action)
             } else {
-                DispatchQueue.main.async {
-                    self.mResult?(response.resultCode)
+                component.stopLoading()
+                if response.resultCode == .authorised || response.resultCode == .received || response.resultCode == .pending, let result = self.mResult {
+                    result(response.resultCode.rawValue)
                     self.topController?.dismiss(animated: false, completion: nil)
+
+                } else if (response.resultCode == .error) {
+                    self.didFail(with: PaymentError(), from: component)
+                }
+                else {
+                    self.didFail(with: PaymentCancelled(), from: component)
                 }
             }
-        }
         }
     }
 
@@ -177,17 +177,17 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
 
     public func didFail(with error: Error, from component: DropInComponent) {
 
-            DispatchQueue.main.async {
-                if (error is PaymentCancelled) {
-                    self.mResult?("PAYMENT_CANCELLED")
-                } else if let componentError = error as? ComponentError, componentError == ComponentError.cancelled {
-                    self.mResult?("PAYMENT_CANCELLED")
-                }else {
-                    self.mResult?("PAYMENT_ERROR")
-                }
-                self.topController?.dismiss(animated: true, completion: nil)
+        DispatchQueue.main.async {
+            if (error is PaymentCancelled) {
+                self.mResult?("PAYMENT_CANCELLED")
+            } else if let componentError = error as? ComponentError, componentError == ComponentError.cancelled {
+                self.mResult?("PAYMENT_CANCELLED")
+            }else {
+                self.mResult?("PAYMENT_ERROR")
             }
+            self.topController?.dismiss(animated: true, completion: nil)
         }
+    }
 }
 
 struct DetailsRequest: Encodable {
