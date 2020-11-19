@@ -1,3 +1,6 @@
+## 0.4.3
+* linting issue
+
 ## 0.4.2
 * enabled 3d Secure 2 on Android
 

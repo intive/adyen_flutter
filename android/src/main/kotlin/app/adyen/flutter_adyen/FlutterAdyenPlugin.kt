@@ -158,7 +158,7 @@ class AdyenDropinService : DropInService() {
             return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(this@AdyenDropinService, lineItem, serializedPaymentComponentData, amount
-                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference, countryCode ?: "DE")
+                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference, countryCode = countryCode ?: "DE")
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
