@@ -62,7 +62,8 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
-                val localeString = call.argument<String>("locale")
+                val localeString = call.argument<String>("locale") ?: "de_DE"
+                val countryCode = localeString.split("_").last()
 
                 var environment = Environment.TEST
                 if (env == "LIVE_US") {
@@ -91,6 +92,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                         remove("AdyenResultCode")
                         putString("baseUrl", baseUrl)
                         putString("amount", "$amount")
+                        putString("countryCode", countryCode)
                         putString("currency", currency)
                         putString("lineItem", lineItemString)
                         putString("shopperReference", shopperReference)
@@ -140,6 +142,7 @@ class AdyenDropinService : DropInService() {
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
+        val countryCode = sharedPref.getString("countryCode", "DE")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
         val uuid: UUID = UUID.randomUUID()
         val reference: String = uuid.toString()
@@ -155,7 +158,7 @@ class AdyenDropinService : DropInService() {
             return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(this@AdyenDropinService, lineItem, serializedPaymentComponentData, amount
-                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference)
+                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference, countryCode ?: "DE")
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
@@ -218,7 +221,14 @@ class AdyenDropinService : DropInService() {
             val response = call.execute()
             val detailsResponse = response.body()
             if (response.isSuccessful && detailsResponse != null) {
-                if (detailsResponse.resultCode != null &&
+                if (detailsResponse.action != null) {
+                    with(sharedPref.edit()) {
+                        putString("AdyenResultCode", detailsResponse.action.toString())
+                        commit()
+                    }
+                    CallResult(CallResult.ResultType.ACTION, Action.SERIALIZER.serialize(detailsResponse.action).toString())
+                }
+                else if (detailsResponse.resultCode != null &&
                         (detailsResponse.resultCode == "Authorised" || detailsResponse.resultCode == "Received" || detailsResponse.resultCode == "Pending")) {
                     with(sharedPref.edit()) {
                         putString("AdyenResultCode", detailsResponse.resultCode)
@@ -251,11 +261,11 @@ class AdyenDropinService : DropInService() {
 }
 
 
-fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String, shopperReference: String?): PaymentsRequest {
+fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String, shopperReference: String?, countryCode: String): PaymentsRequest {
     @Suppress("UsePropertyAccessSyntax")
     return PaymentsRequest(
             paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
-            "DE",
+            countryCode,
             paymentComponentData.isStorePaymentMethodEnable,
             getAmount(amount, currency),
             reference,
@@ -284,7 +294,7 @@ data class PaymentsRequest(
         val returnUrl: String,
         val channel: String = "Android",
         val lineItems: List<LineItem?>,
-        val additionalData: AdditionalData = AdditionalData(allow3DS2 = "false"),
+        val additionalData: AdditionalData = AdditionalData(allow3DS2 = "true"),
         val shopperReference: String?
 )
 data class LineItem(
@@ -292,7 +302,7 @@ data class LineItem(
         val description: String
 ): Serializable
 
-data class AdditionalData(val allow3DS2: String = "false")
+data class AdditionalData(val allow3DS2: String = "true")
 
 private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
     val moshi = Moshi.Builder()

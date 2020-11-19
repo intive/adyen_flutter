@@ -1,3 +1,6 @@
+## 0.4.2
+* enabled 3d Secure 2 on Android
+
 ## 0.4.1
 * added remember me function for iOS
 * improved action handling on ios
