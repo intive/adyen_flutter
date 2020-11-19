@@ -14,7 +14,6 @@ class FlutterAdyen {
       String locale,
       String amount,
       String currency,
-      String reference,
       String returnUrl,
       String shopperReference,
       environment = 'TEST'}) async {
@@ -28,7 +27,6 @@ class FlutterAdyen {
     args.putIfAbsent('currency', () => currency);
     args.putIfAbsent('lineItem', () => lineItem);
     args.putIfAbsent('returnUrl', () => returnUrl);
-    args.putIfAbsent('reference', () => reference);
     args.putIfAbsent('environment', () => environment);
     args.putIfAbsent('shopperReference', () => shopperReference);
 

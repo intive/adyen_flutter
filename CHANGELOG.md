@@ -1,4 +1,9 @@
-## 0.3.9
+## 0.4.1
+* added remember me function for iOS
+* improved action handling on ios
+* removed reference from open dropin call
+
+## 0.4.0
 * moved reference from outside to inside
 
 ## 0.3.9
