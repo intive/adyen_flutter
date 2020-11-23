@@ -1,3 +1,6 @@
+## 0.4.5
+* handling specific error in iOS fixed
+
 ## 0.4.4
 * handling paypal cancelling
 
