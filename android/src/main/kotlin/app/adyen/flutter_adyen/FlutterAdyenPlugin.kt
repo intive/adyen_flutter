@@ -79,6 +79,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
                     val shopperLocale = LocaleUtil.fromLanguageTag(localeString ?: "")
                     val cardConfiguration = CardConfiguration.Builder(activity)
+                            .setHolderNameRequire(true)
                             .setPublicKey(publicKey ?: "")
                             .setShopperLocale(shopperLocale)
                             .setEnvironment(environment)

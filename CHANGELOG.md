@@ -1,3 +1,6 @@
+## 0.4.6
+* show holder name is set default to true
+
 ## 0.4.5
 * handling specific error in iOS fixed
 

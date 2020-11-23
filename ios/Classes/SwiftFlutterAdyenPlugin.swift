@@ -59,6 +59,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         }
 
         let configuration = DropInComponent.PaymentMethodsConfiguration()
+        configuration.card.showsHolderNameField = true
         configuration.clientKey = clientKey
         dropInComponent = DropInComponent(paymentMethods: paymentMethods, paymentMethodsConfiguration: configuration)
         dropInComponent?.delegate = self
