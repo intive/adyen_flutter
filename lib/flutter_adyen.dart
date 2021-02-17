@@ -16,9 +16,11 @@ class FlutterAdyen {
       String currency,
       String returnUrl,
       String shopperReference,
+      Map<String, String> additionalData,
       environment = 'TEST'}) async {
     Map<String, dynamic> args = {};
     args.putIfAbsent('paymentMethods', () => paymentMethods);
+    args.putIfAbsent('additionalData', () => additionalData);
     args.putIfAbsent('baseUrl', () => baseUrl);
     args.putIfAbsent('clientKey', () => clientKey);
     args.putIfAbsent('publicKey', () => publicKey);

@@ -1,3 +1,6 @@
+## 0.5.0
+* added possibility to add additional data to request
+
 ## 0.4.6
 * show holder name is set default to true
 

@@ -33,6 +33,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var shopperReference: String?
     var lineItemJson: [String: String]?
     var shopperLocale: String?
+    var additionalData:  [String: String]?
 
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -41,7 +42,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         let arguments = call.arguments as? [String: Any]
         let paymentMethodsResponse = arguments?["paymentMethods"] as? String
         baseURL = arguments?["baseUrl"] as? String
-
+        additionalData = arguments?["additionalData"] as? [String: String]
         clientKey = arguments?["clientKey"] as? String
         currency = arguments?["currency"] as? String
         amount = arguments?["amount"] as? String
@@ -91,7 +92,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
 
     public func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments") else { return }
+        guard let baseURL = baseURL, let url = URL(string: baseURL + "/payments") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -104,7 +105,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             self.didFail(with: PaymentError(), from: component)
             return
         }
-        let paymentRequest = PaymentRequest( paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0, returnUrl: returnUrl ?? "", storePayment: data.storePaymentMethod, shopperReference: shopperReference, countryCode: shopperLocale)
+        let paymentRequest = PaymentRequest(payment: Payment( paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0, returnUrl: returnUrl ?? "", storePayment: data.storePaymentMethod, shopperReference: shopperReference, countryCode: shopperLocale), additionalData:additionalData ?? [String: String]())
 
         do {
             let jsonData = try JSONEncoder().encode(paymentRequest)
@@ -114,7 +115,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                 if let data = data {
                     self.finish(data: data, component: component)
                 }
-                if let error = error {
+                if error != nil {
                     self.didFail(with: PaymentError(), from: component)
                 }
             }.resume()
@@ -152,7 +153,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
 
     public func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
-        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details") else { return }
+        guard let baseURL = baseURL, let url = URL(string: baseURL + "/payments/details") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -197,6 +198,11 @@ struct DetailsRequest: Encodable {
 }
 
 struct PaymentRequest : Encodable {
+    let payment: Payment
+    let additionalData: [String: String]
+}
+
+struct Payment : Encodable {
     let paymentMethod: AnyEncodable
     let lineItems: [LineItem]
     let channel: String = "iOS"
@@ -217,7 +223,6 @@ struct PaymentRequest : Encodable {
         self.storePaymentMethod = storePayment
         self.countryCode = countryCode
     }
-
 }
 
 struct LineItem: Codable {

@@ -17,6 +17,7 @@ import com.adyen.checkout.dropin.DropInConfiguration
 import com.adyen.checkout.dropin.service.CallResult
 import com.adyen.checkout.dropin.service.DropInService
 import com.adyen.checkout.redirect.RedirectComponent
+import com.google.gson.Gson
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import io.flutter.plugin.common.MethodCall
@@ -31,6 +32,7 @@ import okhttp3.RequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.io.Serializable
+import com.google.gson.reflect.TypeToken;
 
 
 class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, PluginRegistry.ActivityResultListener {
@@ -50,6 +52,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
         when (call.method) {
             "openDropIn" -> {
 
+                val additionalData = call.argument<Map<String, String>>("additionalData")
                 val paymentMethods = call.argument<String>("paymentMethods")
                 val baseUrl = call.argument<String>("baseUrl")
                 val clientKey = call.argument<String>("clientKey")
@@ -62,6 +65,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
+                val additionalDataString = JSONObject(additionalData).toString()
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
 
@@ -96,6 +100,7 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
                         putString("countryCode", countryCode)
                         putString("currency", currency)
                         putString("lineItem", lineItemString)
+                        putString("additionalData", additionalDataString)
                         putString("shopperReference", shopperReference)
                         commit()
                     }
@@ -132,6 +137,9 @@ class FlutterAdyenPlugin(private val activity: Activity) : MethodCallHandler, Pl
  * This is just an example on how to make network calls on the [DropInService].
  * You should make the calls to your own servers and have additional data or processing if necessary.
  */
+inline fun <reified T> Gson.fromJson(json: String) = fromJson<T>(json, object: TypeToken<T>() {}.type)
+
+
 class AdyenDropinService : DropInService() {
 
     companion object {
@@ -145,6 +153,7 @@ class AdyenDropinService : DropInService() {
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val countryCode = sharedPref.getString("countryCode", "DE")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
+        val additionalDataString = sharedPref.getString("additionalData", "UNDEFINED_STR")
         val uuid: UUID = UUID.randomUUID()
         val reference: String = uuid.toString()
         val shopperReference = sharedPref.getString("shopperReference", null)
@@ -153,13 +162,18 @@ class AdyenDropinService : DropInService() {
         val jsonAdapter = moshi.adapter(LineItem::class.java)
         val lineItem: LineItem? = jsonAdapter.fromJson(lineItemString ?: "")
 
+        val gson = Gson()
+
+        val additionalData = gson.fromJson<Map<String, String>>(additionalDataString ?: "")
         val serializedPaymentComponentData = PaymentComponentData.SERIALIZER.deserialize(paymentComponentData)
 
         if (serializedPaymentComponentData.paymentMethod == null)
             return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(this@AdyenDropinService, lineItem, serializedPaymentComponentData, amount
-                ?: "", currency ?: "", reference ?: "", shopperReference = shopperReference, countryCode = countryCode ?: "DE")
+                ?: "", currency ?: "", reference
+                ?: "", shopperReference = shopperReference, countryCode = countryCode
+                ?: "DE", additionalData = additionalData)
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
@@ -262,17 +276,18 @@ class AdyenDropinService : DropInService() {
 }
 
 
-fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String, shopperReference: String?, countryCode: String): PaymentsRequest {
+fun createPaymentsRequest(context: Context, lineItem: LineItem?, paymentComponentData: PaymentComponentData<out PaymentMethodDetails>, amount: String, currency: String, reference: String, shopperReference: String?, countryCode: String, additionalData: Map<String, String>): PaymentsRequest {
     @Suppress("UsePropertyAccessSyntax")
     return PaymentsRequest(
-            paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
-            countryCode,
-            paymentComponentData.isStorePaymentMethodEnable,
-            getAmount(amount, currency),
-            reference,
-            RedirectComponent.getReturnUrl(context),
-            lineItems = listOf(lineItem),
-            shopperReference = shopperReference
+            payment = Payment(paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
+                    countryCode,
+                    paymentComponentData.isStorePaymentMethodEnable,
+                    getAmount(amount, currency),
+                    reference,
+                    RedirectComponent.getReturnUrl(context),
+                    lineItems = listOf(lineItem),
+                    shopperReference = shopperReference),
+            additionalData = additionalData
 
     )
 }
@@ -286,7 +301,7 @@ fun createAmount(value: Int, currency: String): Amount {
     return amount
 }
 
-data class PaymentsRequest(
+data class Payment(
         val paymentMethod: PaymentMethodDetails,
         val countryCode: String = "DE",
         val storePaymentMethod: Boolean,
@@ -297,7 +312,12 @@ data class PaymentsRequest(
         val lineItems: List<LineItem?>,
         val additionalData: AdditionalData = AdditionalData(allow3DS2 = "true"),
         val shopperReference: String?
-)
+): Serializable
+
+data class PaymentsRequest(
+        val payment: Payment,
+        val additionalData: Map<String, String>
+): Serializable
 data class LineItem(
         val id: String,
         val description: String
@@ -306,24 +326,10 @@ data class LineItem(
 data class AdditionalData(val allow3DS2: String = "true")
 
 private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
-    val moshi = Moshi.Builder()
-            .add(PolymorphicJsonAdapterFactory.of(PaymentMethodDetails::class.java, PaymentMethodDetails.TYPE)
-                    .withSubtype(CardPaymentMethod::class.java, CardPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(IdealPaymentMethod::class.java, IdealPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(EPSPaymentMethod::class.java, EPSPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(DotpayPaymentMethod::class.java, DotpayPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(EntercashPaymentMethod::class.java, EntercashPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(OpenBankingPaymentMethod::class.java, OpenBankingPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(GooglePayPaymentMethod::class.java, GooglePayPaymentMethod.PAYMENT_METHOD_TYPE)
-                    .withSubtype(GenericPaymentMethod::class.java, "other")
-            )
-            .build()
-    val jsonAdapter = moshi.adapter(PaymentsRequest::class.java)
-    val requestString = jsonAdapter.toJson(paymentsRequest)
-    val request = JSONObject(requestString)
 
-    request.remove("paymentMethod")
-    request.put("paymentMethod", PaymentMethodDetails.SERIALIZER.serialize(paymentsRequest.paymentMethod))
-
+    val gson = Gson()
+    val jsonString = gson.toJson(paymentsRequest)
+    val request = JSONObject(jsonString)
+    print(request)
     return request
 }
