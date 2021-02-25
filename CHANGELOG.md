@@ -1,3 +1,6 @@
+## 0.6.4
+* fixed pubspec for android
+
 ## 0.6.3
 * fixed another import error
 

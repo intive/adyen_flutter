@@ -36,7 +36,8 @@ class _MyAppState extends State<MyApp> {
                   returnUrl: 'http://asd.de',
                   amount: '1230',
                   lineItem: {'id': '1', 'description': 'adyen test'},
-                  currency: 'EUR');
+                  currency: 'EUR',
+                  additionalData: {});
             } on PlatformException catch (e) {
               if (e.code == 'PAYMENT_CANCELLED')
                 dropInResponse = 'Payment Cancelled';
