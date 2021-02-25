@@ -1,3 +1,6 @@
+## 0.6.3
+* fixed another import error
+
 ## 0.6.2
 * fixed import error
 
