@@ -1,3 +1,9 @@
+## 0.6.2
+* fixed import error
+
+## 0.6.2
+* fixed naming error
+
 ## 0.6.0
 * updated readme and published to pub.dev
 

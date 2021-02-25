@@ -3,6 +3,6 @@
 
 @implementation FlutterAdyenPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftFlutterAdyenPlugin registerWithRegistrar:registrar];
+    [SwiftFlutterAdyenPlugin registerWithRegistrar:registrar];
 }
 @end
