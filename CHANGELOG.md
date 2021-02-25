@@ -1,3 +1,6 @@
+## 0.6.0
+* updated readme and published to pub.dev
+
 ## 0.5.0
 * added possibility to add additional data to request
 
