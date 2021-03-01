@@ -157,7 +157,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let detailsRequest = DetailsRequest(paymentData: data.paymentData, details: data.details.encodable)
+        let detailsRequest = DetailsRequest(paymentData: data.paymentData ?? "", details: data.details.encodable)
         do {
             let detailsRequestData = try JSONEncoder().encode(detailsRequest)
             request.httpBody = detailsRequestData

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:adyen_dropin/flutter_adyen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_adyen/flutter_adyen.dart';
 
 import 'mock_data.dart';
 

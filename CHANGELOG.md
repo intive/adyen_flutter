@@ -1,3 +1,8 @@
+## 0.7.0
+* updated Adyen SDK iOS to 3.8.3
+* updated Adyen SDK Android to 3.8.2
+* fixed example project in plugin
+
 ## 0.6.4
 * fixed pubspec for android
 
