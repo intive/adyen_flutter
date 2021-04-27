@@ -206,7 +206,7 @@ struct Payment : Encodable {
     let paymentMethod: AnyEncodable
     let lineItems: [LineItem]
     let channel: String = "iOS"
-    let additionalData = ["allow3DS2":"true", "allow3DS1":"false"]
+    let additionalData = ["allow3DS2":"true"]
     let amount: Amount
     let reference: String = UUID().uuidString
     let returnUrl: String
