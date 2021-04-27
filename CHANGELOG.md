@@ -1,3 +1,6 @@
+## 0.7.1
+* removed option from iOS SDK to disable 3dSecure1 since it has not effect and is not documented by adyen
+
 ## 0.7.0
 * updated Adyen SDK iOS to 3.8.3
 * updated Adyen SDK Android to 3.8.2
