@@ -2,7 +2,7 @@ group 'app.adyen.flutter_adyen'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.3.21'
+    ext.kotlin_version = '1.3.72'
     // Dependencies
     ext.version_support_library = "28.0.0"
     ext.version_lifecycle_extensions = "1.1.1"
