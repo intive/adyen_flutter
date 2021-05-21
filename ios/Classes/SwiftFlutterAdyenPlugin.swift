@@ -5,19 +5,19 @@ import Adyen3DS2
 import Foundation
 
 struct PaymentError: Error {
-    
+
 }
 struct PaymentCancelled: Error {
-    
+
 }
 public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
-    
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_adyen", binaryMessenger: registrar.messenger())
         let instance = SwiftFlutterAdyenPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
-    
+
     var dropInComponent: DropInComponent?
     var baseURL: String?
     var authToken: String?
@@ -92,7 +92,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
 
     public func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-        guard let baseURL = baseURL, let url = URL(string: baseURL + "/payments") else { return }
+        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -153,7 +153,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
 
     public func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
-        guard let baseURL = baseURL, let url = URL(string: baseURL + "/payments/details") else { return }
+        guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
