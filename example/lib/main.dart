@@ -14,9 +14,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _payment_result = 'Unknown';
+  String? _payment_result = 'Unknown';
 
-  String dropInResponse;
+  String? dropInResponse;
 
   @override
   Widget build(BuildContext context) {

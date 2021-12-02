@@ -7,16 +7,16 @@ class FlutterAdyen {
 
   static Future<String> openDropIn(
       {paymentMethods,
-      String baseUrl,
-      String clientKey,
-      String publicKey,
+      required String baseUrl,
+      required String clientKey,
+      required String publicKey,
       lineItem,
-      String locale,
-      String amount,
-      String currency,
-      String returnUrl,
-      String shopperReference,
-      Map<String, String> additionalData,
+      required String locale,
+      required String amount,
+      required String currency,
+      required String returnUrl,
+      required String shopperReference,
+      required Map<String, String> additionalData,
       environment = 'TEST'}) async {
     Map<String, dynamic> args = {};
     args.putIfAbsent('paymentMethods', () => paymentMethods);

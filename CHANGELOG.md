@@ -1,3 +1,6 @@
+## 0.8.0
+* migrated to nullsafety
+
 ## 0.7.1
 * removed option from iOS SDK to disable 3dSecure1 since it has not effect and is not documented by adyen
 
