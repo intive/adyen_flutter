@@ -1,16 +1,16 @@
 PODS:
-  - Adyen/Card (3.8.3):
+  - Adyen/Card (3.9.1):
     - Adyen/Core
-    - Adyen3DS2 (= 2.2.1)
-  - Adyen/Core (3.8.3)
-  - Adyen/DropIn (3.8.3):
+    - Adyen3DS2 (= 2.2.4)
+  - Adyen/Core (3.9.1)
+  - Adyen/DropIn (3.9.1):
     - Adyen/Card
     - Adyen/Core
-  - Adyen3DS2 (2.2.1)
-  - adyen_dropin (0.6.4):
-    - Adyen/Card (= 3.8.3)
-    - Adyen/Core (= 3.8.3)
-    - Adyen/DropIn (= 3.8.3)
+  - Adyen3DS2 (2.2.4)
+  - adyen_dropin (0.7.0):
+    - Adyen/Card (= 3.9.1)
+    - Adyen/Core (= 3.9.1)
+    - Adyen/DropIn (= 3.9.1)
     - Flutter
   - Flutter (1.0.0)
 
@@ -30,11 +30,11 @@ EXTERNAL SOURCES:
     :path: Flutter
 
 SPEC CHECKSUMS:
-  Adyen: 2fae545785245d852781e8a821cb83a46ecfe3f5
-  Adyen3DS2: d99e5dea8524fc860751804dd760f6bad032de01
-  adyen_dropin: 300ae128e032bbfcd055ff1c97eb445386bf089f
+  Adyen: cad9f5fca7a952e908f0f03bff6b144b289d4ca2
+  Adyen3DS2: ab81415419e1269b95ec01502d18912985806351
+  adyen_dropin: d0185b1973716aea0fe8cf9a848dac9ca593f4cb
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
 
 PODFILE CHECKSUM: 4e8f8b2be68aeea4c0d5beb6ff1e79fface1d048
 
-COCOAPODS: 1.11.0
+COCOAPODS: 1.11.2
