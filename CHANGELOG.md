@@ -1,3 +1,6 @@
+## 0.9.0
+* updated adyen dropin to 3.9.1
+
 ## 0.8.0
 * migrated to nullsafety
 
