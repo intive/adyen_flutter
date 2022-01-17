@@ -1,3 +1,6 @@
+## 0.9.0
+* added support for Android Flutter EmbeddingV2
+
 ## 0.8.0
 * migrated to nullsafety
 
