@@ -3,17 +3,18 @@ package app.adyen.flutter_adyen
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import com.adyen.checkout.base.model.PaymentMethodsApiResponse
-import com.adyen.checkout.base.model.payments.Amount
-import com.adyen.checkout.base.model.payments.request.*
-import com.adyen.checkout.base.model.payments.response.Action
 import com.adyen.checkout.card.CardConfiguration
+import com.adyen.checkout.components.model.PaymentMethodsApiResponse
+import com.adyen.checkout.components.model.payments.Amount
+import com.adyen.checkout.components.model.payments.request.PaymentComponentData
+import com.adyen.checkout.components.model.payments.request.PaymentMethodDetails
+import com.adyen.checkout.components.model.payments.response.Action
 import com.adyen.checkout.core.api.Environment
 import com.adyen.checkout.core.util.LocaleUtil
 import com.adyen.checkout.dropin.DropIn
 import com.adyen.checkout.dropin.DropInConfiguration
-import com.adyen.checkout.dropin.service.CallResult
 import com.adyen.checkout.dropin.service.DropInService
+import com.adyen.checkout.dropin.service.DropInServiceResult
 import com.adyen.checkout.redirect.RedirectComponent
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
@@ -104,16 +105,17 @@ class FlutterAdyenPlugin :
                 try {
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
-                    val shopperLocale = LocaleUtil.fromLanguageTag(localeString ?: "")
-                    val cardConfiguration = CardConfiguration.Builder(nonNullActivity)
-                            .setHolderNameRequire(true)
-                            .setPublicKey(publicKey ?: "")
+                    val shopperLocale = LocaleUtil.fromLanguageTag(localeString)
+                    val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
+                            .setHolderNameRequired(true)
                             .setShopperLocale(shopperLocale)
                             .setEnvironment(environment)
                             .build()
 
-                    val resultIntent = Intent(nonNullActivity, nonNullActivity::class.java)
-                    resultIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    // TODO: Test that the intent is still being delivered back to the activity
+                    val resultIntent = Intent(nonNullActivity, nonNullActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
 
                     val sharedPref = nonNullActivity.getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
                     with(sharedPref.edit()) {
@@ -128,8 +130,7 @@ class FlutterAdyenPlugin :
                         commit()
                     }
 
-                    val dropInConfiguration = DropInConfiguration.Builder(nonNullActivity, resultIntent, AdyenDropinService::class.java)
-                            .setClientKey(clientKey ?: "")
+                    val dropInConfiguration = DropInConfiguration.Builder(nonNullActivity, /* resultIntent, */ AdyenDropinService::class.java, clientKey ?: "")
                             .addCardConfiguration(cardConfiguration)
                             .build()
                     DropIn.startPayment(nonNullActivity, paymentMethodsApiResponse, dropInConfiguration)
@@ -216,7 +217,7 @@ inline fun <reified T> Gson.fromJson(json: String): T? = fromJson<T>(json, objec
 
 class AdyenDropinService : DropInService() {
 
-    override fun makePaymentsCall(paymentComponentData: JSONObject): CallResult {
+    override fun makePaymentsCall(paymentComponentJson: JSONObject): DropInServiceResult {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
@@ -235,10 +236,10 @@ class AdyenDropinService : DropInService() {
         val gson = Gson()
 
         val additionalData = gson.fromJson<Map<String, String>>(additionalDataString ?: "") ?: emptyMap()
-        val serializedPaymentComponentData = PaymentComponentData.SERIALIZER.deserialize(paymentComponentData)
+        val serializedPaymentComponentData = PaymentComponentData.SERIALIZER.deserialize(paymentComponentJson)
 
         if (serializedPaymentComponentData.paymentMethod == null)
-            return CallResult(CallResult.ResultType.ERROR, "Empty payment data")
+            return DropInServiceResult.Error(errorMessage = "Empty payment data")
 
         val paymentsRequest = createPaymentsRequest(
                 context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
@@ -265,7 +266,7 @@ class AdyenDropinService : DropInService() {
                         putString("AdyenResultCode", paymentsResponse.action.toString())
                         commit()
                     }
-                    CallResult(CallResult.ResultType.ACTION, Action.SERIALIZER.serialize(paymentsResponse.action).toString())
+                    DropInServiceResult.Action(Action.SERIALIZER.serialize(paymentsResponse.action).toString())
                 } else {
                     if (paymentsResponse.resultCode != null &&
                             (paymentsResponse.resultCode == "Authorised" || paymentsResponse.resultCode == "Received" || paymentsResponse.resultCode == "Pending")) {
@@ -273,14 +274,13 @@ class AdyenDropinService : DropInService() {
                             putString("AdyenResultCode", paymentsResponse.resultCode)
                             commit()
                         }
-                        CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode)
+                       DropInServiceResult.Finished(paymentsResponse.resultCode)
                     } else {
                         with(sharedPref.edit()) {
                             putString("AdyenResultCode", paymentsResponse.resultCode ?: "EMPTY")
                             commit()
                         }
-                        CallResult(CallResult.ResultType.FINISHED, paymentsResponse.resultCode
-                                ?: "EMPTY")
+                       DropInServiceResult.Finished(paymentsResponse.resultCode ?: "EMPTY")
                     }
                 }
             } else {
@@ -288,21 +288,21 @@ class AdyenDropinService : DropInService() {
                     putString("AdyenResultCode", "ERROR")
                     commit()
                 }
-                CallResult(CallResult.ResultType.ERROR, "IOException")
+                DropInServiceResult.Error(errorMessage = "IOException")
             }
         } catch (e: IOException) {
             with(sharedPref.edit()) {
                 putString("AdyenResultCode", "ERROR")
                 commit()
             }
-            CallResult(CallResult.ResultType.ERROR, "IOException")
+            DropInServiceResult.Error(errorMessage = "IOException")
         }
     }
 
-    override fun makeDetailsCall(actionComponentData: JSONObject): CallResult {
+    override fun makeDetailsCall(actionComponentJson: JSONObject): DropInServiceResult {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
-        val requestBody = RequestBody.create(MediaType.parse("application/json"), actionComponentData.toString())
+        val requestBody = RequestBody.create(MediaType.parse("application/json"), actionComponentJson.toString())
         val headers: HashMap<String, String> = HashMap()
 
         val call = getService(headers, baseUrl ?: "").details(requestBody)
@@ -315,7 +315,7 @@ class AdyenDropinService : DropInService() {
                         putString("AdyenResultCode", detailsResponse.action.toString())
                         commit()
                     }
-                    CallResult(CallResult.ResultType.ACTION, Action.SERIALIZER.serialize(detailsResponse.action).toString())
+                    DropInServiceResult.Action(Action.SERIALIZER.serialize(detailsResponse.action).toString())
                 }
                 else if (detailsResponse.resultCode != null &&
                         (detailsResponse.resultCode == "Authorised" || detailsResponse.resultCode == "Received" || detailsResponse.resultCode == "Pending")) {
@@ -323,28 +323,27 @@ class AdyenDropinService : DropInService() {
                         putString("AdyenResultCode", detailsResponse.resultCode)
                         commit()
                     }
-                    CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode)
+                    DropInServiceResult.Finished(detailsResponse.resultCode)
                 } else {
                     with(sharedPref.edit()) {
                         putString("AdyenResultCode", detailsResponse.resultCode ?: "EMPTY")
                         commit()
                     }
-                    CallResult(CallResult.ResultType.FINISHED, detailsResponse.resultCode
-                            ?: "EMPTY")
+                    DropInServiceResult.Finished(detailsResponse.resultCode ?: "EMPTY")
                 }
             } else {
                 with(sharedPref.edit()) {
                     putString("AdyenResultCode", "ERROR")
                     commit()
                 }
-                CallResult(CallResult.ResultType.ERROR, "IOException")
+                DropInServiceResult.Error(errorMessage = "IOException")
             }
         } catch (e: IOException) {
             with(sharedPref.edit()) {
                 putString("AdyenResultCode", "ERROR")
                 commit()
             }
-            CallResult(CallResult.ResultType.ERROR, "IOException")
+            DropInServiceResult.Error(errorMessage =  "IOException")
         }
     }
 }

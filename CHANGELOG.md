@@ -1,3 +1,7 @@
+## 0.9.1
+* updated Adyen SDK Android to 4.4.0
+* removed jCenter dependency by replacing it for MavenCentral
+
 ## 0.9.0
 * added support for Android Flutter EmbeddingV2
 
