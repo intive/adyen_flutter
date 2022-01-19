@@ -95,6 +95,9 @@ class FlutterAdyenPlugin :
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
 
+                Log.e("Locale String from Flutter: $localeString");
+                Log.e("Country Code from Flutter: $countryCode");
+
                 val environment = when (env) {
                     "LIVE_US" -> Environment.UNITED_STATES
                     "LIVE_AUSTRALIA" -> Environment.AUSTRALIA
@@ -106,6 +109,7 @@ class FlutterAdyenPlugin :
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
                     val shopperLocale = LocaleUtil.fromLanguageTag(localeString)
+                    Log.e("Shopper Locale from localeString $localeString: $shopperLocale")
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
                             .setHolderNameRequired(true)
                             .setShopperLocale(shopperLocale)
