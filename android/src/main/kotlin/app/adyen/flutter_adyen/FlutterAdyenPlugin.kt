@@ -109,7 +109,7 @@ class FlutterAdyenPlugin :
                 try {
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
-                    val shopperLocale = LocaleUtil.fromLanguageTag(localeString)
+                    val shopperLocale = Locale.GERMANY
                     Log.e("[Flutter Adyen] SHOPPER LOCALE", "Shopper Locale from localeString $localeString: ${shopperLocale}")
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
                             .setHolderNameRequired(true)
