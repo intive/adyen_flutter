@@ -36,6 +36,7 @@ import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.BinaryMessenger
+import io.flutter.Log;
 import kotlin.jvm.Throws
 
 class FlutterAdyenPlugin :
@@ -109,7 +110,7 @@ class FlutterAdyenPlugin :
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
                     val shopperLocale = LocaleUtil.fromLanguageTag(localeString)
-                    Log.e("Shopper Locale from localeString $localeString: $shopperLocale")
+                    Log.e("Shopper Locale from localeString $localeString: ${shopperLocale.displayName}")
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
                             .setHolderNameRequired(true)
                             .setShopperLocale(shopperLocale)
