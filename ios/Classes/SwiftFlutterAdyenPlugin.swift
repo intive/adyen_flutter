@@ -3,6 +3,7 @@ import UIKit
 import Adyen
 import Adyen3DS2
 import Foundation
+import AdyenNetworking
 
 struct PaymentError: Error {
 
@@ -33,7 +34,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var shopperReference: String?
     var lineItemJson: [String: String]?
     var shopperLocale: String?
-    var additionalData:  [String: String]?
+    var additionalData: [String: String]?
 
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -42,6 +43,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         let arguments = call.arguments as? [String: Any]
         let paymentMethodsResponse = arguments?["paymentMethods"] as? String
         baseURL = arguments?["baseUrl"] as? String
+        merchantAccount = arguments?["merchantAccount"] as? String
         additionalData = arguments?["additionalData"] as? [String: String]
         clientKey = arguments?["clientKey"] as? String
         currency = arguments?["currency"] as? String
@@ -58,22 +60,23 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
               let paymentMethods = try? JSONDecoder().decode(PaymentMethods.self, from: paymentData) else {
             return
         }
-
-        let configuration = DropInComponent.PaymentMethodsConfiguration()
-        configuration.card.showsHolderNameField = true
-        configuration.clientKey = clientKey
-        dropInComponent = DropInComponent(paymentMethods: paymentMethods, paymentMethodsConfiguration: configuration)
-        dropInComponent?.delegate = self
-        dropInComponent?.environment = .test
-
+        
+        var ctx = Environment.test
         if(environment == "LIVE_US") {
-            dropInComponent?.environment = .liveUnitedStates
+            ctx = Environment.liveUnitedStates
         } else if (environment == "LIVE_AUSTRALIA"){
-            dropInComponent?.environment = .liveAustralia
+            ctx = Environment.liveAustralia
         } else if (environment == "LIVE_EUROPE"){
-            dropInComponent?.environment = .liveEurope
+            ctx = Environment.liveEurope
         }
-
+        
+        let dropInComponentStyle = DropInComponent.Style()
+        
+        let apiContext = APIContext(environment: ctx, clientKey: clientKey!)
+        let configuration = DropInComponent.Configuration(apiContext: apiContext);
+        configuration.card.showsHolderNameField = false
+        dropInComponent = DropInComponent(paymentMethods: paymentMethods, configuration: configuration, style: dropInComponentStyle)
+        dropInComponent?.delegate = self
 
         if var topController = UIApplication.shared.keyWindow?.rootViewController, let dropIn = dropInComponent {
             self.topController = topController
@@ -87,11 +90,16 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
 
 extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
 
-    public func didCancel(component: PresentableComponent, from dropInComponent: DropInComponent) {
+    public func didComplete(from component: DropInComponent) {
+        component.stopLoadingIfNeeded()
+    }
+
+    public func didCancel(component: PaymentComponent, from dropInComponent: DropInComponent) {
         self.didFail(with: PaymentCancelled(), from: dropInComponent)
     }
 
-    public func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
+    public func didSubmit(_ data: PaymentComponentData, for paymentMethod: PaymentMethod, from component: DropInComponent) {
+        NSLog("I'm here")
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -100,12 +108,26 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         let amountAsInt = Int(amount ?? "0")
         // prepare json data
         let paymentMethod = data.paymentMethod.encodable
-        let lineItem = try? JSONDecoder().decode(LineItem.self, from: JSONSerialization.data(withJSONObject: lineItemJson ?? ["":""]) )
-        if lineItem == nil {
-            self.didFail(with: PaymentError(), from: component)
+        
+        guard let lineItem = try? JSONDecoder().decode(LineItem.self, from: JSONSerialization.data(withJSONObject: lineItemJson ?? ["":""]) ) else{ self.didFail(with: PaymentError(), from: component)
             return
         }
-        let paymentRequest = PaymentRequest(payment: Payment( paymentMethod: paymentMethod, lineItem: lineItem ?? LineItem(id: "", description: ""), currency: currency ?? "", amount: amountAsInt ?? 0, returnUrl: returnUrl ?? "", storePayment: data.storePaymentMethod, shopperReference: shopperReference, countryCode: shopperLocale), additionalData:additionalData ?? [String: String]())
+ 
+        let paymentRequest = PaymentRequest(
+            payment: Payment(
+                paymentMethod: paymentMethod,
+                lineItem: lineItem,
+                currency: currency ?? "",
+                merchantAccount: merchantAccount ?? "",
+                reference: reference,
+                amount: amountAsInt ?? 0,
+                returnUrl: returnUrl ?? "",
+                storePayment: data.storePaymentMethod,
+                shopperReference: shopperReference,
+                countryCode: shopperLocale
+            ),
+            additionalData:additionalData ?? [String: String]()
+        )
 
         do {
             let jsonData = try JSONEncoder().encode(paymentRequest)
@@ -119,8 +141,6 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                     self.didFail(with: PaymentError(), from: component)
                 }
             }.resume()
-
-
         } catch {
             didFail(with: PaymentError(), from: component)
         }
@@ -134,10 +154,10 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                 return
             }
             if let action = response.action {
-                component.stopLoading()
+                component.stopLoadingIfNeeded()
                 component.handle(action)
             } else {
-                component.stopLoading()
+                component.stopLoadingIfNeeded()
                 if response.resultCode == .authorised || response.resultCode == .received || response.resultCode == .pending, let result = self.mResult {
                     result(response.resultCode.rawValue)
                     self.topController?.dismiss(animated: false, completion: nil)
@@ -178,7 +198,6 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
 
     public func didFail(with error: Error, from component: DropInComponent) {
-
         DispatchQueue.main.async {
             if (error is PaymentCancelled) {
                 self.mResult?("PAYMENT_CANCELLED")
@@ -206,15 +225,16 @@ struct Payment : Encodable {
     let paymentMethod: AnyEncodable
     let lineItems: [LineItem]
     let channel: String = "iOS"
-    let additionalData = ["allow3DS2":"true"]
+    let additionalData = ["allow3DS2" : "true", "executeThreeD" : "true"]
     let amount: Amount
-    let reference: String = UUID().uuidString
+    let reference: String?
     let returnUrl: String
     let storePaymentMethod: Bool
     let shopperReference: String?
     let countryCode: String?
+    let merchantAccount: String?
 
-    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, amount: Int, returnUrl: String, storePayment: Bool, shopperReference: String?, countryCode: String?) {
+    init(paymentMethod: AnyEncodable, lineItem: LineItem, currency: String, merchantAccount: String, reference: String?, amount: Int, returnUrl: String, storePayment: Bool, shopperReference: String?, countryCode: String?) {
         self.paymentMethod = paymentMethod
         self.lineItems = [lineItem]
         self.amount = Amount(currency: currency, value: amount)
@@ -222,6 +242,8 @@ struct Payment : Encodable {
         self.shopperReference = shopperReference
         self.storePaymentMethod = storePayment
         self.countryCode = countryCode
+        self.merchantAccount = merchantAccount
+        self.reference = reference ?? UUID().uuidString
     }
 }
 
@@ -267,6 +289,7 @@ internal extension PaymentsResponse {
         case redirectShopper = "RedirectShopper"
         case identifyShopper = "IdentifyShopper"
         case challengeShopper = "ChallengeShopper"
+        case presentToShopper = "PresentToShopper"
     }
 
 }
