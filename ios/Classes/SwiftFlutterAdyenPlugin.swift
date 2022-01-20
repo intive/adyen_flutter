@@ -60,7 +60,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
               let paymentMethods = try? JSONDecoder().decode(PaymentMethods.self, from: paymentData) else {
             return
         }
-        
+
         var ctx = Environment.test
         if(environment == "LIVE_US") {
             ctx = Environment.liveUnitedStates
@@ -69,12 +69,12 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         } else if (environment == "LIVE_EUROPE"){
             ctx = Environment.liveEurope
         }
-        
+
         let dropInComponentStyle = DropInComponent.Style()
-        
+
         let apiContext = APIContext(environment: ctx, clientKey: clientKey!)
         let configuration = DropInComponent.Configuration(apiContext: apiContext);
-        configuration.card.showsHolderNameField = false
+        configuration.card.showsHolderNameField = true
         dropInComponent = DropInComponent(paymentMethods: paymentMethods, configuration: configuration, style: dropInComponentStyle)
         dropInComponent?.delegate = self
 
@@ -108,11 +108,11 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         let amountAsInt = Int(amount ?? "0")
         // prepare json data
         let paymentMethod = data.paymentMethod.encodable
-        
+
         guard let lineItem = try? JSONDecoder().decode(LineItem.self, from: JSONSerialization.data(withJSONObject: lineItemJson ?? ["":""]) ) else{ self.didFail(with: PaymentError(), from: component)
             return
         }
- 
+
         let paymentRequest = PaymentRequest(
             payment: Payment(
                 paymentMethod: paymentMethod,
