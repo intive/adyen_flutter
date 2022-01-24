@@ -8,9 +8,7 @@ import com.adyen.checkout.components.model.PaymentMethodsApiResponse
 import com.adyen.checkout.components.model.payments.Amount
 import com.adyen.checkout.components.model.payments.request.PaymentComponentData
 import com.adyen.checkout.components.model.payments.request.PaymentMethodDetails
-import com.adyen.checkout.components.model.payments.response.Action
 import com.adyen.checkout.core.api.Environment
-import com.adyen.checkout.core.util.LocaleUtil
 import com.adyen.checkout.dropin.DropIn
 import com.adyen.checkout.dropin.DropInConfiguration
 import com.adyen.checkout.dropin.service.DropInService
@@ -25,18 +23,19 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import java.util.*
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.io.Serializable
 import com.google.gson.reflect.TypeToken;
+import io.flutter.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.BinaryMessenger
-import io.flutter.Log;
+import java.util.*
+import kotlin.collections.HashMap
 import kotlin.jvm.Throws
 
 class FlutterAdyenPlugin :
@@ -83,7 +82,6 @@ class FlutterAdyenPlugin :
                 val paymentMethods = call.argument<String>("paymentMethods")
                 val baseUrl = call.argument<String>("baseUrl")
                 val clientKey = call.argument<String>("clientKey")
-                val publicKey = call.argument<String>("publicKey")
                 val amount = call.argument<String>("amount")
                 val currency = call.argument<String>("currency")
                 val env = call.argument<String>("environment")
@@ -96,8 +94,8 @@ class FlutterAdyenPlugin :
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
 
-                Log.e("[Flutter Adyen] LOCALESTRING", "Locale String from Flutter: $localeString");
-                Log.e("[Flutter Adyen] COUNTRYCODE", "Country Code from Flutter: $countryCode");
+                // Log.e("[Flutter Adyen] LOCALESTRING", "Locale String from Flutter: $localeString");
+                // Log.e("[Flutter Adyen] COUNTRYCODE", "Country Code from Flutter: $countryCode");
 
                 val environment = when (env) {
                     "LIVE_US" -> Environment.UNITED_STATES
@@ -110,17 +108,13 @@ class FlutterAdyenPlugin :
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
                     val shopperLocale = Locale.GERMANY
-                    Log.e("[Flutter Adyen] SHOPPER LOCALE", "Shopper Locale from localeString $localeString: ${shopperLocale}")
+                    // val shopperLocale = if (LocaleUtil.isValidLocale(locale)) locale else LocaleUtil.getLocale(nonNullActivity)
+                    // Log.e("[Flutter Adyen] SHOPPER LOCALE", "Shopper Locale from localeString $localeString: $shopperLocale")
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
                             .setHolderNameRequired(true)
                             .setShopperLocale(shopperLocale)
                             .setEnvironment(environment)
                             .build()
-
-                    // TODO: Test that the intent is still being delivered back to the activity
-                    val resultIntent = Intent(nonNullActivity, nonNullActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    }
 
                     val sharedPref = nonNullActivity.getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
                     with(sharedPref.edit()) {
@@ -135,7 +129,7 @@ class FlutterAdyenPlugin :
                         commit()
                     }
 
-                    val dropInConfiguration = DropInConfiguration.Builder(nonNullActivity, /* resultIntent, */ AdyenDropinService::class.java, clientKey ?: "")
+                    val dropInConfiguration = DropInConfiguration.Builder(nonNullActivity, AdyenDropinService::class.java, clientKey)
                             .addCardConfiguration(cardConfiguration)
                             .build()
                     DropIn.startPayment(nonNullActivity, paymentMethodsApiResponse, dropInConfiguration)
@@ -271,7 +265,7 @@ class AdyenDropinService : DropInService() {
                         putString("AdyenResultCode", paymentsResponse.action.toString())
                         commit()
                     }
-                    DropInServiceResult.Action(Action.SERIALIZER.serialize(paymentsResponse.action).toString())
+                    DropInServiceResult.Action(paymentsResponse.action)
                 } else {
                     if (paymentsResponse.resultCode != null &&
                             (paymentsResponse.resultCode == "Authorised" || paymentsResponse.resultCode == "Received" || paymentsResponse.resultCode == "Pending")) {
@@ -320,7 +314,7 @@ class AdyenDropinService : DropInService() {
                         putString("AdyenResultCode", detailsResponse.action.toString())
                         commit()
                     }
-                    DropInServiceResult.Action(Action.SERIALIZER.serialize(detailsResponse.action).toString())
+                    DropInServiceResult.Action(detailsResponse.action)
                 }
                 else if (detailsResponse.resultCode != null &&
                         (detailsResponse.resultCode == "Authorised" || detailsResponse.resultCode == "Received" || detailsResponse.resultCode == "Pending")) {
