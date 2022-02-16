@@ -141,8 +141,11 @@ class FlutterAdyenPlugin :
 
                     val dropInConfiguration = DropInConfiguration.Builder(nonNullActivity, AdyenDropinService::class.java, clientKey)
                             .addCardConfiguration(cardConfiguration)
+                            .setEnvironment(environment)
                             .build()
+
                     DropIn.startPayment(nonNullActivity, paymentMethodsApiResponse, dropInConfiguration)
+
                     flutterResult = res
                 } catch (e: Throwable) {
                     res.error("PAYMENT_ERROR", "${e.printStackTrace()}", "")
