@@ -8,9 +8,9 @@
 
 package app.adyen.flutter_adyen
 
-import com.adyen.checkout.base.model.paymentmethods.InputDetail
-import com.adyen.checkout.base.model.payments.request.*
-import com.adyen.checkout.base.model.payments.response.*
+import com.adyen.checkout.components.model.paymentmethods.InputDetail
+import com.adyen.checkout.components.model.payments.request.*
+import com.adyen.checkout.components.model.payments.response.*
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory

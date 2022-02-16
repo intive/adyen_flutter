@@ -1,3 +1,8 @@
+## 0.10.0
+* updated Adyen SDK Android to 4.4.0
+* removed jCenter dependency by replacing it for MavenCentral
+* added support for Android Flutter EmbeddingV2
+
 ## 0.9.0
 * updated adyen dropin to 3.9.1
 
