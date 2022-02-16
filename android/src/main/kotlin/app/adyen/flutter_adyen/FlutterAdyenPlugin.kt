@@ -78,7 +78,7 @@ class FlutterAdyenPlugin :
 
                 val nonNullActivity = activity!!
 
-                val additionalData =CardConfiguration.Builder call.argument<Map<String, String>>("additionalData") ?: emptyMap()
+                val additionalData = call.argument<Map<String, String>>("additionalData") ?: emptyMap()
                 val paymentMethods = call.argument<String>("paymentMethods")
                 val baseUrl = call.argument<String>("baseUrl")
                 val clientKey = call.argument<String>("clientKey")
