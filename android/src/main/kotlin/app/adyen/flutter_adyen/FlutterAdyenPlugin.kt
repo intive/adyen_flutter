@@ -78,7 +78,7 @@ class FlutterAdyenPlugin :
 
                 val nonNullActivity = activity!!
 
-                val additionalData = call.argument<Map<String, String>>("additionalData") ?: emptyMap()
+                val additionalData =CardConfiguration.Builder call.argument<Map<String, String>>("additionalData") ?: emptyMap()
                 val paymentMethods = call.argument<String>("paymentMethods")
                 val baseUrl = call.argument<String>("baseUrl")
                 val clientKey = call.argument<String>("clientKey")
@@ -94,6 +94,7 @@ class FlutterAdyenPlugin :
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
 
+                /*
                 Log.e("[Flutter Adyen]", "Client Key from Flutter: $clientKey")
                 Log.e("[Flutter Adyen]", "Environment from Flutter: $env")
                 Log.e("[Flutter Adyen]", "Locale String from Flutter: $localeString")
@@ -102,6 +103,7 @@ class FlutterAdyenPlugin :
                 Log.e("[Flutter Adyen]", "Base URL from Flutter: $baseUrl")
                 Log.e("[Flutter Adyen]", "Currency from Flutter: $currency")
                 Log.e("[Flutter Adyen]", "Shopper Reference from Flutter: $shopperReference")
+                 */
 
                 val environment = when (env) {
                     "LIVE_US" -> Environment.UNITED_STATES
@@ -110,7 +112,7 @@ class FlutterAdyenPlugin :
                     else -> Environment.TEST
                 }
 
-                Log.e("[Flutter Adyen] ENVIRONMENT", "Resolved environment: $environment")
+                // Log.e("[Flutter Adyen] ENVIRONMENT", "Resolved environment: $environment")
 
                 try {
                     val jsonObject = JSONObject(paymentMethods ?: "")
