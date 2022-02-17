@@ -202,11 +202,12 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             if (error is PaymentCancelled) {
                 self.mResult?("PAYMENT_CANCELLED")
             } else if let componentError = error as? ComponentError, componentError == ComponentError.cancelled {
+                // when the user pressed the cancel button (and maybe other instances)
                 self.mResult?("PAYMENT_CANCELLED")
-            }else {
+                self.topController?.dismiss(animated: true, completion: nil)
+            } else {
                 self.mResult?("PAYMENT_ERROR")
             }
-            self.topController?.dismiss(animated: true, completion: nil)
         }
     }
 }

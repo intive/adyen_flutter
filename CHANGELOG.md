@@ -2,6 +2,7 @@
 * updated Adyen SDK Android to 4.4.0
 * removed jCenter dependency by replacing it for MavenCentral
 * added support for Android Flutter EmbeddingV2
+* iOS - do not close the Payment selector on iOS after canceling or an Error. Like on Android
 
 ## 0.8.0
 * migrated to nullsafety
