@@ -17,6 +17,7 @@ class FlutterAdyen {
       required String returnUrl,
       required String shopperReference,
       required Map<String, String> additionalData,
+      Map<String, String>? headers,
       environment = 'TEST'}) async {
     Map<String, dynamic> args = {};
     args.putIfAbsent('paymentMethods', () => paymentMethods);
@@ -31,6 +32,7 @@ class FlutterAdyen {
     args.putIfAbsent('returnUrl', () => returnUrl);
     args.putIfAbsent('environment', () => environment);
     args.putIfAbsent('shopperReference', () => shopperReference);
+    args.putIfAbsent('headers', () => headers);
 
     final String response = await _channel.invokeMethod('openDropIn', args);
     return response;

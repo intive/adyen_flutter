@@ -87,12 +87,14 @@ class FlutterAdyenPlugin :
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<Map<String, String>>("lineItem")
                 val shopperReference = call.argument<String>("shopperReference")
+                val headers = call.argument<HashMap<String, String>>("headers")
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
                 val additionalDataString = JSONObject(additionalData).toString()
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
+                val headersString = headers.toString();
 
                 /*
                 Log.e("[Flutter Adyen]", "Client Key from Flutter: $clientKey")
@@ -136,6 +138,7 @@ class FlutterAdyenPlugin :
                         putString("lineItem", lineItemString)
                         putString("additionalData", additionalDataString)
                         putString("shopperReference", shopperReference)
+                        putString("headers", headersString);
                         commit()
                     }
 
@@ -240,6 +243,7 @@ class AdyenDropinService : DropInService() {
         val uuid: UUID = UUID.randomUUID()
         val reference: String = uuid.toString()
         val shopperReference = sharedPref.getString("shopperReference", null)
+        val headersString = sharedPref.getString("headers", null)
 
         val moshi = Moshi.Builder().build()
         val jsonAdapter = moshi.adapter(LineItem::class.java)
@@ -248,6 +252,7 @@ class AdyenDropinService : DropInService() {
         val gson = Gson()
 
         val additionalData = gson.fromJson<Map<String, String>>(additionalDataString ?: "") ?: emptyMap()
+        val headers = gson.fromJson<HashMap<String, String>>(headersString ?: "") ?: HashMap()
         val serializedPaymentComponentData = PaymentComponentData.SERIALIZER.deserialize(paymentComponentJson)
 
         if (serializedPaymentComponentData.paymentMethod == null)
@@ -265,7 +270,6 @@ class AdyenDropinService : DropInService() {
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
 
-        val headers: HashMap<String, String> = HashMap()
         val call = getService(headers, baseUrl ?: "").payments(requestBody)
         call.request().headers()
         return try {
