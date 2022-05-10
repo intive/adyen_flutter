@@ -16,7 +16,12 @@ import com.adyen.checkout.dropin.service.DropInServiceResult
 import com.adyen.checkout.redirect.RedirectComponent
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
 import com.squareup.moshi.Moshi
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -28,15 +33,7 @@ import okhttp3.RequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.io.Serializable
-import com.google.gson.reflect.TypeToken;
-import io.flutter.Log
-import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.embedding.engine.plugins.activity.ActivityAware
-import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.plugin.common.BinaryMessenger
 import java.util.*
-import kotlin.collections.HashMap
-import kotlin.jvm.Throws
 
 class FlutterAdyenPlugin :
         MethodCallHandler, PluginRegistry.ActivityResultListener, FlutterPlugin, ActivityAware {
@@ -87,14 +84,14 @@ class FlutterAdyenPlugin :
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<Map<String, String>>("lineItem")
                 val shopperReference = call.argument<String>("shopperReference")
-                val headers = call.argument<HashMap<String, String>>("headers")
+                val headers = call.argument<Map<String, String>>("headers")
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
                 val additionalDataString = JSONObject(additionalData).toString()
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
-                val headersString = headers.toString();
+                val headersString = JSONObject(headers).toString()
 
                 /*
                 Log.e("[Flutter Adyen]", "Client Key from Flutter: $clientKey")
@@ -252,7 +249,7 @@ class AdyenDropinService : DropInService() {
         val gson = Gson()
 
         val additionalData = gson.fromJson<Map<String, String>>(additionalDataString ?: "") ?: emptyMap()
-        val headers = gson.fromJson<HashMap<String, String>>(headersString ?: "") ?: HashMap()
+        val headers = gson.fromJson<Map<String, String>>(headersString ?: "") ?: emptyMap()
         val serializedPaymentComponentData = PaymentComponentData.SERIALIZER.deserialize(paymentComponentJson)
 
         if (serializedPaymentComponentData.paymentMethod == null)
@@ -270,7 +267,7 @@ class AdyenDropinService : DropInService() {
 
         val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
 
-        val call = getService(headers, baseUrl ?: "").payments(requestBody)
+        val call = getService(HashMap<String, String>(headers), baseUrl ?: "").payments(requestBody)
         call.request().headers()
         return try {
             val response = call.execute()
