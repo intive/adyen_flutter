@@ -27,13 +27,13 @@ class _MyAppState extends State<MyApp> {
           onPressed: () async {
             try {
               dropInResponse = await FlutterAdyen.openDropIn(
-                  paymentMethods: jsonEncode(examplePaymentMethods),
+                  paymentMethods: jsonEncode(myPaymentMethods),
                   baseUrl: '$baseUrl/',
                   clientKey: clientKey,
                   publicKey: publicKey,
                   locale: locale,
                   shopperReference: '',
-                  returnUrl: '',
+                  returnUrl: 'adyendropin://',
                   amount: '100',
                   lineItem: {},
                   currency: currency,

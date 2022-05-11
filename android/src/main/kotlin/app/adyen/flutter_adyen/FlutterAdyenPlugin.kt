@@ -264,28 +264,17 @@ class AdyenDropinService : DropInService() {
         if (serializedPaymentComponentData.paymentMethod == null)
             return DropInServiceResult.Error(errorMessage = "Empty payment data")
 
-        val tempPaymentRequest = createPaymentRequest(context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
+        val paymentsRequest = createPaymentsRequest(
+                context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
                 amount = amount ?: "",
                 currency = currency ?: "",
                 reference = reference,
                 shopperReference = shopperReference,
                 countryCode = countryCode ?: "DE",
-                additionalData = additionalData);
+                additionalData = additionalData)
+        val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
-        val paymentRequest = serializePaymentRequest(tempPaymentRequest);
-
-
-//        val paymentsRequest = createPaymentsRequest(
-//                context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
-//                amount = amount ?: "",
-//                currency = currency ?: "",
-//                reference = reference,
-//                shopperReference = shopperReference,
-//                countryCode = countryCode ?: "DE",
-//                additionalData = additionalData)
-//        val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
-
-        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentRequest.toString())
+        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequest.toString())
 
         val call = getService(HashMap<String, String>(headers), baseUrl ?: "").payments(requestBody)
         call.request().headers()
@@ -457,14 +446,6 @@ data class AdditionalData(val allow3DS2: String = "true")
 private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
     val gson = Gson()
     val jsonString = gson.toJson(paymentsRequest)
-    val request = JSONObject(jsonString)
-    print(request)
-    return request
-}
-
-private fun serializePaymentRequest(paymentRequest: Payment): JSONObject {
-    val gson = Gson()
-    val jsonString = gson.toJson(paymentRequest)
     val request = JSONObject(jsonString)
     print(request)
     return request
