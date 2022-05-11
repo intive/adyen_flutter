@@ -9,6 +9,7 @@ import com.adyen.checkout.components.model.payments.Amount
 import com.adyen.checkout.components.model.payments.request.PaymentComponentData
 import com.adyen.checkout.components.model.payments.request.PaymentMethodDetails
 import com.adyen.checkout.core.api.Environment
+import com.adyen.checkout.core.util.LocaleUtil
 import com.adyen.checkout.dropin.DropIn
 import com.adyen.checkout.dropin.DropInConfiguration
 import com.adyen.checkout.dropin.service.DropInService
@@ -90,9 +91,15 @@ class FlutterAdyenPlugin :
                 val lineItemString = JSONObject(lineItem).toString()
                 val additionalDataString = JSONObject(additionalData).toString()
                 val localeString = call.argument<String>("locale") ?: "de_DE"
-                val countryCode = localeString.split("_").last()
                 val headersString = JSONObject(headers).toString()
+                val localeParts = localeString.split("_")
+                val countryCode = localeParts.last()
+                var locale = Locale(countryCode)
 
+                if (localeParts.size > 1) {
+                    locale = Locale(localeParts[0], localeParts[1])
+                }
+                
                 /*
                 Log.e("[Flutter Adyen]", "Client Key from Flutter: $clientKey")
                 Log.e("[Flutter Adyen]", "Environment from Flutter: $env")
@@ -102,7 +109,8 @@ class FlutterAdyenPlugin :
                 Log.e("[Flutter Adyen]", "Base URL from Flutter: $baseUrl")
                 Log.e("[Flutter Adyen]", "Currency from Flutter: $currency")
                 Log.e("[Flutter Adyen]", "Shopper Reference from Flutter: $shopperReference")
-                 */
+                */
+
 
                 val environment = when (env) {
                     "LIVE_US" -> Environment.UNITED_STATES
@@ -116,9 +124,9 @@ class FlutterAdyenPlugin :
                 try {
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
-                    val shopperLocale = Locale.GERMANY
-                    // val shopperLocale = if (LocaleUtil.isValidLocale(locale)) locale else LocaleUtil.getLocale(nonNullActivity)
+                    // val shopperLocale = Locale.GERMANY
                     // Log.e("[Flutter Adyen] SHOPPER LOCALE", "Shopper Locale from localeString $localeString: $shopperLocale")
+                    val shopperLocale = if (LocaleUtil.isValidLocale(locale)) locale else LocaleUtil.getLocale(nonNullActivity)
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
                             .setHolderNameRequired(true)
                             .setShopperLocale(shopperLocale)
@@ -141,6 +149,7 @@ class FlutterAdyenPlugin :
 
                     val dropInConfiguration = DropInConfiguration.Builder(nonNullActivity, AdyenDropinService::class.java, clientKey)
                             .addCardConfiguration(cardConfiguration)
+                            .setShopperLocale(shopperLocale)
                             .setEnvironment(environment)
                             .build()
 
@@ -255,17 +264,28 @@ class AdyenDropinService : DropInService() {
         if (serializedPaymentComponentData.paymentMethod == null)
             return DropInServiceResult.Error(errorMessage = "Empty payment data")
 
-        val paymentsRequest = createPaymentsRequest(
-                context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
+        val tempPaymentRequest = createPaymentRequest(context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
                 amount = amount ?: "",
                 currency = currency ?: "",
                 reference = reference,
                 shopperReference = shopperReference,
                 countryCode = countryCode ?: "DE",
-                additionalData = additionalData)
-        val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
+                additionalData = additionalData);
 
-        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
+        val paymentRequest = serializePaymentRequest(tempPaymentRequest);
+
+
+//        val paymentsRequest = createPaymentsRequest(
+//                context = this@AdyenDropinService, lineItem, serializedPaymentComponentData,
+//                amount = amount ?: "",
+//                currency = currency ?: "",
+//                reference = reference,
+//                shopperReference = shopperReference,
+//                countryCode = countryCode ?: "DE",
+//                additionalData = additionalData)
+//        val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
+
+        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentRequest.toString())
 
         val call = getService(HashMap<String, String>(headers), baseUrl ?: "").payments(requestBody)
         call.request().headers()
@@ -381,6 +401,23 @@ fun createPaymentsRequest(context: Context, lineItem: LineItem?,
     )
 }
 
+fun createPaymentRequest(context: Context, lineItem: LineItem?,
+                          paymentComponentData: PaymentComponentData<out PaymentMethodDetails>,
+                          amount: String, currency: String,
+                          reference: String, shopperReference: String?,
+                          countryCode: String,
+                          additionalData: Map<String, String>): Payment {
+    @Suppress("UsePropertyAccessSyntax")
+    return Payment(paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
+            countryCode,
+            paymentComponentData.isStorePaymentMethodEnable,
+            getAmount(amount, currency),
+            reference,
+            RedirectComponent.getReturnUrl(context),
+            lineItems = listOf(lineItem),
+            shopperReference = shopperReference)
+}
+
 private fun getAmount(amount: String, currency: String) = createAmount(amount.toInt(), currency)
 
 fun createAmount(value: Int, currency: String): Amount {
@@ -420,6 +457,14 @@ data class AdditionalData(val allow3DS2: String = "true")
 private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
     val gson = Gson()
     val jsonString = gson.toJson(paymentsRequest)
+    val request = JSONObject(jsonString)
+    print(request)
+    return request
+}
+
+private fun serializePaymentRequest(paymentRequest: Payment): JSONObject {
+    val gson = Gson()
+    val jsonString = gson.toJson(paymentRequest)
     val request = JSONObject(jsonString)
     print(request)
     return request
