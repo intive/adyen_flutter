@@ -310,14 +310,14 @@ class AdyenDropinService : DropInService() {
                     putString("AdyenResultCode", "ERROR")
                     commit()
                 }
-                DropInServiceResult.Error(errorMessage = "IOException")
+                DropInServiceResult.Finished("PAYMENT_ERROR")
             }
         } catch (e: IOException) {
             with(sharedPref.edit()) {
                 putString("AdyenResultCode", "ERROR")
                 commit()
             }
-            DropInServiceResult.Error(errorMessage = "IOException")
+            DropInServiceResult.Finished("PAYMENT_ERROR")
         }
     }
 
@@ -358,14 +358,14 @@ class AdyenDropinService : DropInService() {
                     putString("AdyenResultCode", "ERROR")
                     commit()
                 }
-                DropInServiceResult.Error(errorMessage = "IOException")
+                DropInServiceResult.Finished("PAYMENT_ERROR")
             }
         } catch (e: IOException) {
             with(sharedPref.edit()) {
                 putString("AdyenResultCode", "ERROR")
                 commit()
             }
-            DropInServiceResult.Error(errorMessage =  "IOException")
+            DropInServiceResult.Finished("PAYMENT_ERROR")
         }
     }
 }
@@ -388,23 +388,6 @@ fun createPaymentsRequest(context: Context, lineItem: LineItem?,
                     shopperReference = shopperReference),
             additionalData = additionalData
     )
-}
-
-fun createPaymentRequest(context: Context, lineItem: LineItem?,
-                          paymentComponentData: PaymentComponentData<out PaymentMethodDetails>,
-                          amount: String, currency: String,
-                          reference: String, shopperReference: String?,
-                          countryCode: String,
-                          additionalData: Map<String, String>): Payment {
-    @Suppress("UsePropertyAccessSyntax")
-    return Payment(paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
-            countryCode,
-            paymentComponentData.isStorePaymentMethodEnable,
-            getAmount(amount, currency),
-            reference,
-            RedirectComponent.getReturnUrl(context),
-            lineItems = listOf(lineItem),
-            shopperReference = shopperReference)
 }
 
 private fun getAmount(amount: String, currency: String) = createAmount(amount.toInt(), currency)

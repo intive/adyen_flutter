@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:developer';
 
+import 'package:adyen_dropin/enums/adyen_response.dart';
+import 'package:adyen_dropin/exceptions/adyen_exception.dart';
 import 'package:adyen_dropin/flutter_adyen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'mock_data.dart';
 
@@ -14,9 +16,9 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String? _payment_result = 'Unknown';
+  String? paymentResult = AdyenResponse.Unknown.name;
 
-  String? dropInResponse;
+  AdyenResponse? dropInResponse;
 
   @override
   Widget build(BuildContext context) {
@@ -39,23 +41,25 @@ class _MyAppState extends State<MyApp> {
                   currency: currency,
                   additionalData: {},
                   headers: headers);
-            } on PlatformException catch (e) {
-              if (e.code == 'PAYMENT_CANCELLED')
-                dropInResponse = 'Payment Cancelled';
-              else
-                dropInResponse = 'Payment Error';
+              setState(() {
+                paymentResult = dropInResponse?.name ?? AdyenResponse.Unknown.name;
+              });
+            } on AdyenException catch (e) {
+              setState(() {
+                paymentResult = e.error.name;
+              });
+            } catch (e) {
+              log(e.toString());
             }
 
-            setState(() {
-              _payment_result = dropInResponse;
-            });
+
           },
         ),
         appBar: AppBar(
           title: const Text('Flutter Adyen'),
         ),
         body: Center(
-          child: Text('Payment Result: $_payment_result\n'),
+          child: Text('Payment Result: $paymentResult\n'),
         ),
       ),
     );
