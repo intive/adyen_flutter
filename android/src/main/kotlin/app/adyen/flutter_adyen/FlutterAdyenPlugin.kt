@@ -274,7 +274,7 @@ class AdyenDropinService : DropInService() {
                 additionalData = additionalData)
         val paymentsRequestJson = serializePaymentsRequest(paymentsRequest)
 
-        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequest.toString())
+        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
 
         val call = getService(HashMap<String, String>(headers), baseUrl ?: "").payments(requestBody)
         call.request().headers()
