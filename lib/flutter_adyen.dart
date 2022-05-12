@@ -36,19 +36,17 @@ class FlutterAdyen {
     args.putIfAbsent('environment', () => environment);
     args.putIfAbsent('shopperReference', () => shopperReference);
     args.putIfAbsent('headers', () => headers);
-    try {
-      final String response =  await _channel.invokeMethod('openDropIn', args);
-      return AdyenResponse.values.firstWhere((element) => element.name == response,
-          orElse: () => AdyenResponse.Unknown);
-    } on PlatformException catch (e) {
-      switch(e.code) {
-        case 'PAYMENT_ERROR':
-          throw AdyenException(AdyenError.PAYMENT_ERROR, e.message);
-        case 'PAYMENT_CANCELLED':
-          throw AdyenException(AdyenError.PAYMENT_CANCELLED, e.message);
-        default:
-          rethrow;
-      }
+    final response =  await _channel.invokeMethod<String>('openDropIn', args);
+
+    switch(response) {
+      case 'PAYMENT_ERROR':
+        throw AdyenException(AdyenError.PAYMENT_ERROR, response);
+      case 'PAYMENT_CANCELLED':
+        throw AdyenException(AdyenError.PAYMENT_CANCELLED, response);
     }
+
+    return AdyenResponse.values.firstWhere((element) =>
+    element.name.toLowerCase() == response?.toLowerCase(),
+        orElse: () => throw AdyenException(AdyenError.PAYMENT_ERROR, response));
   }
 }

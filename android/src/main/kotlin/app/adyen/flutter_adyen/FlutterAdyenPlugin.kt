@@ -307,14 +307,14 @@ class AdyenDropinService : DropInService() {
                 }
             } else {
                 with(sharedPref.edit()) {
-                    putString("AdyenResultCode", "ERROR")
+                    putString("AdyenResultCode", "PAYMENT_ERROR")
                     commit()
                 }
                 DropInServiceResult.Finished("PAYMENT_ERROR")
             }
         } catch (e: IOException) {
             with(sharedPref.edit()) {
-                putString("AdyenResultCode", "ERROR")
+                putString("AdyenResultCode", "PAYMENT_ERROR")
                 commit()
             }
             DropInServiceResult.Finished("PAYMENT_ERROR")
@@ -355,14 +355,14 @@ class AdyenDropinService : DropInService() {
                 }
             } else {
                 with(sharedPref.edit()) {
-                    putString("AdyenResultCode", "ERROR")
+                    putString("AdyenResultCode", "PAYMENT_ERROR")
                     commit()
                 }
                 DropInServiceResult.Finished("PAYMENT_ERROR")
             }
         } catch (e: IOException) {
             with(sharedPref.edit()) {
-                putString("AdyenResultCode", "ERROR")
+                putString("AdyenResultCode", "PAYMENT_ERROR")
                 commit()
             }
             DropInServiceResult.Finished("PAYMENT_ERROR")

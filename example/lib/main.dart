@@ -16,7 +16,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String? paymentResult = AdyenResponse.Unknown.name;
+  String? paymentResult;
 
   AdyenResponse? dropInResponse;
 
@@ -29,7 +29,7 @@ class _MyAppState extends State<MyApp> {
           onPressed: () async {
             try {
               dropInResponse = await FlutterAdyen.openDropIn(
-                  paymentMethods: jsonEncode(myPaymentMethods),
+                  paymentMethods: jsonEncode(examplePaymentMethods),
                   baseUrl: '$baseUrl/',
                   clientKey: clientKey,
                   publicKey: publicKey,
@@ -42,7 +42,7 @@ class _MyAppState extends State<MyApp> {
                   additionalData: {},
                   headers: headers);
               setState(() {
-                paymentResult = dropInResponse?.name ?? AdyenResponse.Unknown.name;
+                paymentResult = dropInResponse?.name;
               });
             } on AdyenException catch (e) {
               setState(() {

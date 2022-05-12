@@ -10,6 +10,5 @@ enum AdyenResponse {
   PresentToShopper,
   Received,
   RedirectShopper,
-  Refused,
-  Unknown
+  Refused
 }
