@@ -324,10 +324,14 @@ class AdyenDropinService : DropInService() {
     override fun makeDetailsCall(actionComponentJson: JSONObject): DropInServiceResult {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
+        val headersString = sharedPref.getString("headers", null)
         val requestBody = RequestBody.create(MediaType.parse("application/json"), actionComponentJson.toString())
-        val headers: HashMap<String, String> = HashMap()
 
-        val call = getService(headers, baseUrl ?: "").details(requestBody)
+        val gson = Gson()
+
+        val headers = gson.fromJson<Map<String, String>>(headersString ?: "") ?: emptyMap()
+
+        val call = getService(HashMap<String, String>(headers), baseUrl ?: "").details(requestBody)
         return try {
             val response = call.execute()
             val detailsResponse = response.body()
