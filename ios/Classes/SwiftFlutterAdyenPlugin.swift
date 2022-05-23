@@ -17,6 +17,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         let channel = FlutterMethodChannel(name: "flutter_adyen", binaryMessenger: registrar.messenger())
         let instance = SwiftFlutterAdyenPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
+        registrar.addApplicationDelegate(instance)
     }
 
     var dropInComponent: DropInComponent?
@@ -35,6 +36,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var lineItemJson: [String: String]?
     var shopperLocale: String?
     var additionalData: [String: String]?
+    var headers: [String: String]?
 
 
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -54,6 +56,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         returnUrl = arguments?["returnUrl"] as? String
         shopperReference = arguments?["shopperReference"] as? String
         shopperLocale = String((arguments?["locale"] as? String)?.split(separator: "_").last ?? "DE")
+        headers = arguments?["headers"] as? [String: String]
         mResult = result
 
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
@@ -86,6 +89,13 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
             topController.present(dropIn.viewController, animated: true)
         }
     }
+    
+    
+    public func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+        RedirectComponent.applicationDidOpen(from: url)
+
+        return true
+    }
 }
 
 extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
@@ -99,11 +109,14 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
     }
 
     public func didSubmit(_ data: PaymentComponentData, for paymentMethod: PaymentMethod, from component: DropInComponent) {
-        NSLog("I'm here")
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        for (key, value) in headers ?? [:] {
+            request.addValue(value, forHTTPHeaderField: key)
+        }
 
         let amountAsInt = Int(amount ?? "0")
         // prepare json data
@@ -177,6 +190,9 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        for (key, value) in headers ?? [:] {
+            request.addValue(value, forHTTPHeaderField: key)
+        }
         let detailsRequest = DetailsRequest(paymentData: data.paymentData ?? "", details: data.details.encodable)
         do {
             let detailsRequestData = try JSONEncoder().encode(detailsRequest)
@@ -203,12 +219,14 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                 self.mResult?("PAYMENT_CANCELLED")
             } else if let componentError = error as? ComponentError, componentError == ComponentError.cancelled {
                 self.mResult?("PAYMENT_CANCELLED")
-            }else {
+            } else {
                 self.mResult?("PAYMENT_ERROR")
             }
             self.topController?.dismiss(animated: true, completion: nil)
         }
     }
+    
+    
 }
 
 struct DetailsRequest: Encodable {
@@ -248,8 +266,8 @@ struct Payment : Encodable {
 }
 
 struct LineItem: Codable {
-    let id: String
-    let description: String
+    let id: String?
+    let description: String?
 }
 
 struct Amount: Codable {

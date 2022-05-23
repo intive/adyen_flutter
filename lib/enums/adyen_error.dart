@@ -1,0 +1,4 @@
+enum AdyenError {
+  PAYMENT_ERROR,
+  PAYMENT_CANCELLED
+}
