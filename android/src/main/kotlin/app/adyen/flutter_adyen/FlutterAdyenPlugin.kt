@@ -413,7 +413,7 @@ data class Payment(
         val returnUrl: String,
         val channel: String = "Android",
         val lineItems: List<LineItem?>,
-        val additionalData: AdditionalData = AdditionalData(allow3DS2 = "true"),
+        val additionalData: AdditionalData = AdditionalData(allow3DS2 = "true", executeThreeD = "true"),
         val shopperReference: String?
 ): Serializable
 
@@ -427,7 +427,7 @@ data class LineItem(
         val description: String
 ): Serializable
 
-data class AdditionalData(val allow3DS2: String = "true")
+data class AdditionalData(val allow3DS2: String = "true", var executeThreeD: String = "true")
 //endregion
 
 private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
