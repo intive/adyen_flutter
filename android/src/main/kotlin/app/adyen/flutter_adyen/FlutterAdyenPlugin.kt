@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.adyen.checkout.card.CardConfiguration
+import com.adyen.checkout.components.ActionComponentData
 import com.adyen.checkout.components.model.PaymentMethodsApiResponse
 import com.adyen.checkout.components.model.payments.Amount
 import com.adyen.checkout.components.model.payments.request.PaymentComponentData
@@ -314,7 +315,17 @@ class AdyenDropinService : DropInService() {
     override fun makeDetailsCall(actionComponentJson: JSONObject): DropInServiceResult {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
-        val requestBody = RequestBody.create(MediaType.parse("application/json"), actionComponentJson.toString())
+        val additionalDataString = sharedPref.getString("additionalData", "UNDEFINED_STR")
+
+        val gson = Gson()
+
+        val additionalData = gson.fromJson<Map<String, String>>(additionalDataString ?: "") ?: emptyMap()
+        val serializedActionComponentData = ActionComponentData.SERIALIZER.deserialize(actionComponentJson)
+
+        val paymentDetailsRequest = createPaymentDetailsRequest(serializedActionComponentData, additionalData)
+        val paymentDetailsRequestJson = serializePaymentDetailsRequest(paymentDetailsRequest)
+
+        val requestBody = RequestBody.create(MediaType.parse("application/json"), paymentDetailsRequestJson.toString())
         val headers: HashMap<String, String> = HashMap()
 
         val call = getService(headers, baseUrl ?: "").details(requestBody)
@@ -380,6 +391,11 @@ fun createPaymentsRequest(context: Context, lineItem: LineItem?,
     )
 }
 
+fun createPaymentDetailsRequest(actionComponentData: ActionComponentData,
+                                additionalData: Map<String, String>): PaymentDetailsRequest {
+    return PaymentDetailsRequest(actionComponentData, additionalData)
+}
+
 private fun getAmount(amount: String, currency: String) = createAmount(amount.toInt(), currency)
 
 fun createAmount(value: Int, currency: String): Amount {
@@ -390,6 +406,16 @@ fun createAmount(value: Int, currency: String): Amount {
 }
 
 //region data classes
+data class PaymentsRequest(
+        val payment: Payment,
+        val additionalData: Map<String, String>
+): Serializable
+
+data class PaymentDetailsRequest(
+        val paymentDetails: ActionComponentData,
+        val additionalData: Map<String, String>
+): Serializable
+
 data class Payment(
         val paymentMethod: PaymentMethodDetails,
         val countryCode: String = "DE",
@@ -403,11 +429,6 @@ data class Payment(
         val shopperReference: String?
 ): Serializable
 
-data class PaymentsRequest(
-        val payment: Payment,
-        val additionalData: Map<String, String>
-): Serializable
-
 data class LineItem(
         val id: String,
         val description: String
@@ -419,6 +440,14 @@ data class AdditionalData(val allow3DS2: String = "true")
 private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
     val gson = Gson()
     val jsonString = gson.toJson(paymentsRequest)
+    val request = JSONObject(jsonString)
+    print(request)
+    return request
+}
+
+private fun serializePaymentDetailsRequest(paymentDetailsRequest: PaymentDetailsRequest): JSONObject {
+    val gson = Gson()
+    val jsonString = gson.toJson(paymentDetailsRequest)
     val request = JSONObject(jsonString)
     print(request)
     return request
