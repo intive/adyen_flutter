@@ -54,6 +54,7 @@ fun getService(headers: HashMap<String, String>, baseUrl: String): CheckoutApiSe
             .add(PolymorphicJsonAdapterFactory.of(Action::class.java, Action.TYPE)
                     .withSubtype(RedirectAction::class.java, RedirectAction.ACTION_TYPE)
                     .withSubtype(Threeds2FingerprintAction::class.java, Threeds2FingerprintAction.ACTION_TYPE)
+                    .withSubtype(Threeds2Action::class.java, Threeds2Action.ACTION_TYPE)
                     .withSubtype(Threeds2ChallengeAction::class.java, Threeds2ChallengeAction.ACTION_TYPE)
                     .withSubtype(QrCodeAction::class.java, QrCodeAction.ACTION_TYPE)
                     .withSubtype(VoucherAction::class.java, VoucherAction.ACTION_TYPE)

@@ -3,7 +3,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'adyen_dropin'
-  s.version          = '0.7.0'
+  s.version          = '0.11.0'
   s.summary          = 'Flutter plugin to integrate with the Android and iOS libraries of Adyen.'
   s.description      = <<-DESC
 Flutter plugin to integrate with the Android and iOS libraries of Adyen.
@@ -15,9 +15,9 @@ Flutter plugin to integrate with the Android and iOS libraries of Adyen.
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'Adyen', '4.4.0'
-  s.dependency 'Adyen/SwiftUI', '4.4.0'
+  s.dependency 'Adyen', '4.8.0'
+  s.dependency 'Adyen/SwiftUI', '4.8.0'
 
-  s.ios.deployment_target = '13.0'
+  s.ios.deployment_target = '12.0'
 end
 

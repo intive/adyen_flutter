@@ -62,7 +62,7 @@ android {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "com.adyen.checkout:drop-in:4.4.0"
+    implementation "com.adyen.checkout:drop-in:4.7.1"
     implementation "com.google.code.gson:gson:2.8.6"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$version_kotlinx"
     implementation "androidx.appcompat:appcompat:$version_support_library"
