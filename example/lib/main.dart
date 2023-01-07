@@ -27,16 +27,17 @@ class _MyAppState extends State<MyApp> {
           onPressed: () async {
             try {
               dropInResponse = await FlutterAdyen.openDropIn(
-                  paymentMethods: jsonEncode(examplePaymentMethods),
-                  baseUrl: 'https://yourdomain.com',
-                  clientKey: 'clientkey',
-                  publicKey: 'publickey',
-                  locale: 'de_DE',
+                  paymentMethods: jsonEncode(examplePaymentMethods2),
+                  baseUrl: 'https://checkout-test.adyen.com/v69/',
+                  clientKey: 'test_SN3VYRCD5BGE7DGKOCLRVO2Y744KZIMC',
+                  publicKey:
+                      'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-jNCgh/vvn6xbpxlu0g0IQR/Ta3fnvZHHmpf223MdtW8=-7U5<8,~MVEImAzZg',
+                  locale: 'zh-rHK',
                   shopperReference: 'asdasda',
                   returnUrl: 'http://asd.de',
                   amount: '1230',
                   lineItem: {'id': '1', 'description': 'adyen test'},
-                  currency: 'EUR',
+                  currency: 'HK',
                   additionalData: {});
             } on PlatformException catch (e) {
               if (e.code == 'PAYMENT_CANCELLED')
