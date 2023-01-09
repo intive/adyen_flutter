@@ -4,6 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import app.adyen.flutter_adyen.network.apis.getService
+import app.adyen.flutter_adyen.network.requests.PaymentsRequestV69
+import app.adyen.flutter_adyen.utils.createPaymentRequestV69
+import app.adyen.flutter_adyen.utils.putAll
+import app.adyen.flutter_adyen.utils.serializePaymentsRequestV69
 import com.adyen.checkout.card.CardConfiguration
 import com.adyen.checkout.components.model.PaymentMethodsApiResponse
 import com.adyen.checkout.components.model.paymentmethods.Item
@@ -287,7 +292,7 @@ class AdyenDropinService : DropInService() {
             isExecuteThreeD = false,
             shopperEmail = null,
         )
-        val paymentsRequestJson = serializePaymentsRequestV69(paymentsRequest)
+        val paymentsRequestJson = paymentsRequest.serializePaymentsRequestV69()
         Log.e("TAG", "paymentsRequestJson $paymentsRequestJson")
         val requestBody =
             RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
@@ -369,66 +374,6 @@ class AdyenDropinService : DropInService() {
     }
 }
 
-fun createPaymentsRequest(
-    context: Context, lineItem: LineItem?,
-    paymentComponentData: PaymentComponentData<out PaymentMethodDetails>,
-    amount: String, currency: String,
-    reference: String, shopperReference: String?,
-    countryCode: String,
-    additionalData: Map<String, String>
-): PaymentsRequest {
-    @Suppress("UsePropertyAccessSyntax")
-    return PaymentsRequest(
-        payment = Payment(
-            paymentComponentData.getPaymentMethod() as PaymentMethodDetails,
-            countryCode,
-            paymentComponentData.isStorePaymentMethodEnable,
-            getAmount(amount, currency),
-            reference,
-            RedirectComponent.getReturnUrl(context),
-            lineItems = listOf(lineItem),
-            shopperReference = shopperReference
-        ),
-        additionalData = additionalData
-    )
-}
-
-@Suppress("LongParameterList")
-fun createPaymentRequestV69(
-    paymentComponentData: JSONObject,
-    shopperReference: String,
-    amount: String,
-    currency: String,
-//    countryCode: String,
-    merchantAccount: String,
-    redirectUrl: String,
-    isThreeds2Enabled: Boolean,
-    isExecuteThreeD: Boolean,
-    shopperEmail: String? = null,
-    force3DS2Challenge: Boolean = true,
-    threeDSAuthenticationOnly: Boolean = false
-): PaymentsRequestV69 {
-    val paymentsRequestData = PaymentsRequestDataV69(
-        shopperReference = shopperReference,
-        amount = getAmount(amount, currency),
-        merchantAccount = merchantAccount,
-        returnUrl = redirectUrl,
-//        countryCode = countryCode,
-        shopperIP = SHOPPER_IP,
-        reference = getReference(),
-        channel = CHANNEL,
-        additionalData = getAdditionalDataV69(
-            isThreeds2Enabled = isThreeds2Enabled,
-            isExecuteThreeD = isExecuteThreeD
-        ),
-        lineItems = LINE_ITEMS,
-        shopperEmail = shopperEmail,
-        threeDSAuthenticationOnly = threeDSAuthenticationOnly,
-        threeDS2RequestData = if (force3DS2Challenge) ThreeDS2RequestDataRequest() else null
-    )
-
-    return PaymentsRequestV69(paymentComponentData, paymentsRequestData)
-}
 
 data class PaymentsRequestDataV69(
     val shopperReference: String,
@@ -450,8 +395,6 @@ data class ThreeDS2RequestDataRequest(
     val deviceChannel: String = "app",
     val challengeIndicator: String = "requestChallenge"
 )
-
-private fun getAmount(amount: String, currency: String) = createAmount(amount.toInt(), currency)
 
 fun createAmount(value: Int, currency: String): Amount {
     val amount = Amount()
@@ -479,14 +422,6 @@ data class PaymentsRequest(
     val additionalData: Map<String, String>
 ) : Serializable
 
-/**
- * Data inside this class will not be sent as shown, instead paymentComponentData and requestData will
- * both be merged into the same JSON object. Check [PaymentsRepositoryImpl] for implementation.
- */
-data class PaymentsRequestV69(
-    val paymentComponentData: JSONObject,
-    val requestData: PaymentsRequestDataV69
-) : Serializable
 
 data class LineItem(
     val id: String,
@@ -502,23 +437,6 @@ data class AdditionalDataV69(
     val executeThreeD: String = "false"
 )
 
-
-private fun serializePaymentsRequest(paymentsRequest: PaymentsRequest): JSONObject {
-    val gson = Gson()
-    val jsonString = gson.toJson(paymentsRequest)
-    val request = JSONObject(jsonString)
-    print(request)
-    return request
-}
-
-private fun serializePaymentsRequestV69(paymentsRequest: PaymentsRequestV69): JSONObject {
-    val gson = Gson()
-    val jsonString = gson.toJson(paymentsRequest)
-    val request = JSONObject(jsonString)
-    print(request)
-    return request
-}
-
 private fun PaymentsRequestV69.combineToJSONObject(): JSONObject {
     val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     val adapter = moshi.adapter(PaymentsRequestDataV69::class.java)
@@ -528,23 +446,3 @@ private fun PaymentsRequestV69.combineToJSONObject(): JSONObject {
         // This will override any already existing fields in requestDataJson
         .putAll(this.paymentComponentData)
 }
-
-private fun JSONObject.putAll(other: JSONObject): JSONObject {
-    val keys = other.keys()
-    while (keys.hasNext()) {
-        val key = keys.next()
-        val value = other.get(key)
-        put(key, value)
-    }
-    return this
-}
-
-private const val SHOPPER_IP = "142.12.31.22"
-private const val CHANNEL = "android"
-private val LINE_ITEMS = listOf(Item())
-private fun getReference() = "android-test-components_${System.currentTimeMillis()}"
-private fun getAdditionalDataV69(isThreeds2Enabled: Boolean, isExecuteThreeD: Boolean) =
-    AdditionalDataV69(
-        allow3DS2 = isThreeds2Enabled.toString(),
-        executeThreeD = isExecuteThreeD.toString()
-    )

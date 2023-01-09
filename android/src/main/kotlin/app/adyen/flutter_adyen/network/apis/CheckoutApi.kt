@@ -1,26 +1,14 @@
-/*
- * Copyright (c) 2019 Adyen N.V.
- *
- * This file is open source and available under the MIT license. See the LICENSE file for more info.
- *
- * Created by caiof on 11/2/2019.
- */
+package app.adyen.flutter_adyen.network.apis
 
-package app.adyen.flutter_adyen
-
-import com.adyen.checkout.components.model.paymentmethods.InputDetail
+import app.adyen.flutter_adyen.network.adapters.JSONObjectAdapter
+import app.adyen.flutter_adyen.network.intercepters.HeaderInterceptor
 import com.adyen.checkout.components.model.payments.request.*
 import com.adyen.checkout.components.model.payments.response.*
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
-import com.squareup.moshi.*
+import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
-import okhttp3.Response
-import okio.Buffer
-import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Retrofit
@@ -28,7 +16,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-interface CheckoutApiService {
+interface CheckoutApi {
     @POST("payments")
     fun payments(@Body paymentsRequest: JSONObject): Call<JSONObject>
 
@@ -36,15 +24,7 @@ interface CheckoutApiService {
     fun details(@Body detailsRequest: JSONObject): Call<JSONObject>
 }
 
-class HeaderInterceptor(private val headers: HashMap<String, String>) : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response = chain.run {
-        val builder = request().newBuilder()
-        headers.keys.forEach { builder.addHeader(it, headers[it] ?: "") }
-        proceed(builder.build())
-    }
-}
-
-fun getService(headers: HashMap<String, String>, baseUrl: String): CheckoutApiService {
+fun getService(headers: HashMap<String, String>, baseUrl: String): CheckoutApi {
     val moshi = Moshi.Builder()
         .add(
             PolymorphicJsonAdapterFactory.of(
@@ -96,31 +76,5 @@ fun getService(headers: HashMap<String, String>, baseUrl: String): CheckoutApiSe
         .client(client)
         .build()
 
-    return retrofit.create(CheckoutApiService::class.java)
-}
-
-data class PaymentsApiResponse(
-    val resultCode: String? = null,
-    val paymentData: String? = null,
-    val details: List<InputDetail>? = null,
-    val action: Action? = null
-)
-
-class JSONObjectAdapter {
-    @Suppress("UNCHECKED_CAST")
-    @FromJson
-    fun fromJson(reader: JsonReader): JSONObject? {
-        return (reader.readJsonValue() as? Map<String, Any>)?.let { data ->
-            try {
-                JSONObject(data)
-            } catch (e: JSONException) {
-                JSONObject()
-            }
-        }
-    }
-
-    @ToJson
-    fun toJson(writer: JsonWriter, value: JSONObject?) {
-        value?.let { writer.value(Buffer().writeUtf8(value.toString())) }
-    }
+    return retrofit.create(CheckoutApi::class.java)
 }
