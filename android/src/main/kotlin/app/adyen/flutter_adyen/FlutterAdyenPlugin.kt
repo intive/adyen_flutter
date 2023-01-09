@@ -7,6 +7,7 @@ import android.util.Log
 import app.adyen.flutter_adyen.network.apis.getService
 import app.adyen.flutter_adyen.utils.combineToJSONObject
 import app.adyen.flutter_adyen.utils.createPaymentRequestV69
+import app.adyen.flutter_adyen.utils.getAmount
 import com.adyen.checkout.card.CardConfiguration
 import com.adyen.checkout.components.model.PaymentMethodsApiResponse
 import com.adyen.checkout.components.model.paymentmethods.Item
@@ -14,6 +15,7 @@ import com.adyen.checkout.components.model.payments.request.PaymentComponentData
 import com.adyen.checkout.components.model.payments.response.Action
 import com.adyen.checkout.core.api.Environment
 import com.adyen.checkout.core.model.toStringPretty
+import com.adyen.checkout.core.util.LocaleUtil
 import com.adyen.checkout.dropin.DropIn
 import com.adyen.checkout.dropin.DropInConfiguration
 import com.adyen.checkout.dropin.service.DropInService
@@ -130,12 +132,9 @@ class FlutterAdyenPlugin :
                     val jsonObject = JSONObject(paymentMethods ?: "")
                     val paymentMethodsApiResponse =
                         PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
-                    val shopperLocale = Locale.GERMANY
-                    // val shopperLocale = if (LocaleUtil.isValidLocale(locale)) locale else LocaleUtil.getLocale(nonNullActivity)
-                    // Log.e("[Flutter Adyen] SHOPPER LOCALE", "Shopper Locale from localeString $localeString: $shopperLocale")
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
-                        .setHolderNameRequired(true)
-                        .setShopperLocale(shopperLocale)
+                        .setHolderNameRequired(false)
+                        .setShopperLocale(LocaleUtil.getLocale(nonNullActivity))
                         .setEnvironment(environment)
                         .build()
 
@@ -164,8 +163,8 @@ class FlutterAdyenPlugin :
                         nonNullActivity,
                         AdyenDropinService::class.java,
                         clientKey
-                    )
-                        .addCardConfiguration(cardConfiguration)
+                    ).addCardConfiguration(cardConfiguration)
+                        .setAmount(getAmount(amount ?: "", currency ?: ""))
                         .setEnvironment(environment)
                         .build()
 
