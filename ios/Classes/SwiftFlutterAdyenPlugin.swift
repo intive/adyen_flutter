@@ -24,6 +24,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var authToken: String?
     var merchantAccount: String?
     var clientKey: String?
+    var publicKey: String?
     var currency: String?
     var amount: String?
     var returnUrl: String?
@@ -46,6 +47,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         merchantAccount = arguments?["merchantAccount"] as? String
         additionalData = arguments?["additionalData"] as? [String: String]
         clientKey = arguments?["clientKey"] as? String
+        publicKey = arguments?["publicKey"] as? String
         currency = arguments?["currency"] as? String
         amount = arguments?["amount"] as? String
         lineItemJson = arguments?["lineItem"] as? [String: String]
@@ -104,34 +106,21 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue(publicKey ?? "", forHTTPHeaderField: "x-API-key")
 
         let amountAsInt = Int(amount ?? "0")
         // prepare json data
         let paymentMethod = data.paymentMethod.encodable
-
-        guard let lineItem = try? JSONDecoder().decode(LineItem.self, from: JSONSerialization.data(withJSONObject: lineItemJson ?? ["":""]) ) else{ self.didFail(with: PaymentError(), from: component)
-            return
-        }
-
-        let paymentRequest = PaymentRequest(
-            payment: Payment(
-                paymentMethod: paymentMethod,
-                lineItem: lineItem,
-                currency: currency ?? "",
-                merchantAccount: merchantAccount ?? "",
-                reference: reference,
-                amount: amountAsInt ?? 0,
-                returnUrl: returnUrl ?? "",
-                storePayment: data.storePaymentMethod,
-                shopperReference: shopperReference,
-                countryCode: shopperLocale
-            ),
-            additionalData:additionalData ?? [String: String]()
+        let paymentRequest = PaymentRequestV69(paymentMethod: paymentMethod,
+                                               amount: amountAsInt ?? 0,
+                                               reference: UUID().uuidString,
+                                               returnUrl: returnUrl ?? "",
+                                               merchantAccount: merchantAccount ?? "",
+                                               currency: currency ?? "", shopperReference: ""
         )
-
         do {
             let jsonData = try JSONEncoder().encode(paymentRequest)
-
+            
             request.httpBody = jsonData
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let data = data {
@@ -177,9 +166,9 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let detailsRequest = DetailsRequest(paymentData: data.paymentData ?? "", details: data.details.encodable)
+        request.addValue(publicKey ?? "", forHTTPHeaderField: "x-API-key")
         do {
-            let detailsRequestData = try JSONEncoder().encode(detailsRequest)
+            let detailsRequestData = try JSONEncoder().encode(data.details.encodable)
             request.httpBody = detailsRequestData
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let response = response as? HTTPURLResponse {
@@ -219,6 +208,24 @@ struct DetailsRequest: Encodable {
 struct PaymentRequest : Encodable {
     let payment: Payment
     let additionalData: [String: String]
+}
+
+struct PaymentRequestV69: Encodable {
+    let amount: Amount
+    let reference: String
+    let paymentMethod: AnyEncodable
+    let returnUrl: String
+    let merchantAccount: String
+    let shopperReference: String
+
+    init(paymentMethod: AnyEncodable, amount: Int, reference: String, returnUrl: String, merchantAccount: String, currency: String, shopperReference: String) {
+        self.paymentMethod = paymentMethod
+        self.amount = Amount(currency: currency, value: amount)
+        self.returnUrl = returnUrl
+        self.merchantAccount = merchantAccount
+        self.reference = reference// UUID().uuidString
+        self.shopperReference = shopperReference
+    }
 }
 
 struct Payment : Encodable {

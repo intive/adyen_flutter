@@ -34,11 +34,21 @@ class _MyAppState extends State<MyApp> {
                       'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-jNCgh/vvn6xbpxlu0g0IQR/Ta3fnvZHHmpf223MdtW8=-7U5<8,~MVEImAzZg',
                   locale: 'zh-rHK',
                   shopperReference: 'asdasda',
-                  returnUrl: 'http://asd.de',
+                  returnUrl: '',
                   amount: '1230',
                   lineItem: {'id': '1', 'description': 'adyen test'},
-                  currency: 'HK',
-                  additionalData: {});
+                  currency: 'HKD',
+                  merchantAccount: 'LegatoTechECOM',
+                  reference: '',
+                  threeDS2RequestData: {
+                    "deviceChannel": "app",
+                    "challengeIndicator": "requestChallenge"
+                  },
+                  additionalData: {
+                    "allow3DS2": "true",
+                    "executeThreeD": "false"
+                  },
+                  storePaymentMethod: false);
             } on PlatformException catch (e) {
               if (e.code == 'PAYMENT_CANCELLED')
                 dropInResponse = 'Payment Cancelled';
