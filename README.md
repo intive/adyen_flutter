@@ -1,4 +1,4 @@
-# adyen_dropin
+# adyen_drop_in_plugin
 
 Note: This library is not official from Adyen.
 

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:adyen_dropin/flutter_adyen.dart';
+import 'package:adyen_drop_in_plugin/adyen_drop_in_plugin.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -26,7 +26,7 @@ class _MyAppState extends State<MyApp> {
           child: Icon(Icons.add),
           onPressed: () async {
             try {
-              dropInResponse = await FlutterAdyen.openDropIn(
+              dropInResponse = await AdyenDropInPlugin.openDropIn(
                   paymentMethods: jsonEncode(examplePaymentMethods2),
                   baseUrl: 'https://checkout-test.adyen.com/v69/',
                   clientKey: 'test_SN3VYRCD5BGE7DGKOCLRVO2Y744KZIMC',

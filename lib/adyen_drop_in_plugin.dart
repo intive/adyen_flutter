@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
-class FlutterAdyen {
+class AdyenDropInPlugin {
   static const MethodChannel _channel = const MethodChannel('flutter_adyen');
 
   static Future<String> openDropIn(
