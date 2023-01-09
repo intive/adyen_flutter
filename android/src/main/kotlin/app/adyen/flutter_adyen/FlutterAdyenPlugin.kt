@@ -5,16 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import app.adyen.flutter_adyen.network.apis.getService
-import app.adyen.flutter_adyen.network.requests.PaymentsRequestV69
+import app.adyen.flutter_adyen.utils.combineToJSONObject
 import app.adyen.flutter_adyen.utils.createPaymentRequestV69
-import app.adyen.flutter_adyen.utils.putAll
-import app.adyen.flutter_adyen.utils.serializePaymentsRequestV69
 import com.adyen.checkout.card.CardConfiguration
 import com.adyen.checkout.components.model.PaymentMethodsApiResponse
 import com.adyen.checkout.components.model.paymentmethods.Item
-import com.adyen.checkout.components.model.payments.Amount
 import com.adyen.checkout.components.model.payments.request.PaymentComponentData
-import com.adyen.checkout.components.model.payments.request.PaymentMethodDetails
 import com.adyen.checkout.components.model.payments.response.Action
 import com.adyen.checkout.core.api.Environment
 import com.adyen.checkout.core.model.toStringPretty
@@ -27,7 +23,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -38,11 +33,8 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import okhttp3.MediaType
-import okhttp3.RequestBody
 import org.json.JSONObject
 import java.io.IOException
-import java.io.Serializable
 import java.util.*
 
 class FlutterAdyenPlugin :
@@ -98,10 +90,19 @@ class FlutterAdyenPlugin :
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<Map<String, String>>("lineItem")
                 val shopperReference = call.argument<String>("shopperReference")
+                val locale = call.argument<String>("locale") ?: ""
+
+                val returnUrl = call.argument<String>("returnUrl")
+                val merchantAccount = call.argument<String>("merchantAccount")
+                val reference = call.argument<String>("reference")
+                val threeDS2RequestData =
+                    call.argument<Map<String, String>>("threeDS2RequestData") ?: emptyMap()
+                val storePaymentMethod = call.argument<Boolean>("storePaymentMethod")
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
                 val lineItemString = JSONObject(lineItem).toString()
                 val additionalDataString = JSONObject(additionalData).toString()
+                val threeDS2RequestDataString = JSONObject(threeDS2RequestData).toString()
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
 
@@ -145,11 +146,17 @@ class FlutterAdyenPlugin :
                         putString("baseUrl", baseUrl)
                         putString("amount", "$amount")
                         putString("countryCode", countryCode)
+                        putString("locale", locale)
                         putString("currency", currency)
                         putString("lineItem", lineItemString)
                         putString("additionalData", additionalDataString)
                         putString("shopperReference", shopperReference)
                         putString("apiKey", apiKey)
+                        putString("returnUrl", returnUrl)
+                        putString("merchantAccount", merchantAccount)
+                        putString("reference", reference)
+                        putString("threeDS2RequestData", threeDS2RequestDataString)
+                        putBoolean("storePaymentMethod", storePaymentMethod ?: false)
                         commit()
                     }
 
@@ -183,8 +190,8 @@ class FlutterAdyenPlugin :
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (activity == null) return false
 
-        val sharedPref = activity!!.getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
-        val storedResultCode = sharedPref.getString("AdyenResultCode", "PAYMENT_CANCELLED")
+        val sharedPref = activity?.getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
+        val storedResultCode = sharedPref?.getString("AdyenResultCode", "PAYMENT_CANCELLED")
         flutterResult?.success(storedResultCode)
         flutterResult = null
         return true
@@ -255,25 +262,27 @@ class AdyenDropinService : DropInService() {
     override fun makePaymentsCall(paymentComponentJson: JSONObject): DropInServiceResult {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
+        val merchantAccount = sharedPref.getString("merchantAccount", "UNDEFINED_STR")
         val apiKey: String = sharedPref.getString("apiKey", "") ?: ""
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
-//        val currency = sharedPref.getString("currency", "UNDEFINED_STR")
-        val currency = "HKD"
-        val countryCode = sharedPref.getString("countryCode", "DE")
+        val currency = sharedPref.getString("currency", "UNDEFINED_STR")
+        val locale = sharedPref.getString("locale", "UNDEFINED_STR")
         val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
         val additionalDataString = sharedPref.getString("additionalData", "UNDEFINED_STR")
-        val uuid: UUID = UUID.randomUUID()
-        val reference: String = uuid.toString()
+        val threeDS2RequestDataString = sharedPref.getString("threeDS2RequestData", "UNDEFINED_STR")
         val shopperReference = sharedPref.getString("shopperReference", null)
+        val reference = sharedPref.getString("reference", "UNDEFINED_STR")
 
         val moshi = Moshi.Builder().build()
-        val jsonAdapter = moshi.adapter(LineItem::class.java)
-        val lineItem: LineItem? = jsonAdapter.fromJson(lineItemString ?: "")
+        val jsonAdapter = moshi.adapter(Item::class.java)
+        val item: Item? = jsonAdapter.fromJson(lineItemString ?: "")
 
         val gson = Gson()
 
         val additionalData =
             gson.fromJson<Map<String, String>>(additionalDataString ?: "") ?: emptyMap()
+        val threeDS2RequestData =
+            gson.fromJson<Map<String, String>>(threeDS2RequestDataString ?: "") ?: emptyMap()
         val serializedPaymentComponentData =
             PaymentComponentData.SERIALIZER.deserialize(paymentComponentJson)
 
@@ -282,20 +291,18 @@ class AdyenDropinService : DropInService() {
 
         val paymentsRequest = createPaymentRequestV69(
             paymentComponentData = paymentComponentJson,
-            shopperReference = "",
+            shopperReference = shopperReference,
             amount = amount ?: "",
             currency = currency ?: "",
-//            countryCode = "HK",
-            merchantAccount = "LegatoTechECOM",
+            countryCode = locale,
+            merchantAccount = merchantAccount,
             redirectUrl = RedirectComponent.getReturnUrl(applicationContext),
-            isThreeds2Enabled = true,
-            isExecuteThreeD = false,
+            threeDS2RequestData = threeDS2RequestData,
             shopperEmail = null,
+            additionalData = additionalData,
+            reference = reference ?: "",
+            items = if (item != null) listOf(item) else emptyList()
         )
-        val paymentsRequestJson = paymentsRequest.serializePaymentsRequestV69()
-        Log.e("TAG", "paymentsRequestJson $paymentsRequestJson")
-        val requestBody =
-            RequestBody.create(MediaType.parse("application/json"), paymentsRequestJson.toString())
 
         val headers: HashMap<String, String> = HashMap()
         headers["x-API-key"] = apiKey
@@ -320,8 +327,6 @@ class AdyenDropinService : DropInService() {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val apiKey: String = sharedPref.getString("apiKey", "") ?: ""
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
-        val requestBody =
-            RequestBody.create(MediaType.parse("application/json"), actionComponentJson.toString())
         val headers: HashMap<String, String> = HashMap()
         headers["x-API-key"] = apiKey
         headers["content-type"] = "application/json"
@@ -372,77 +377,4 @@ class AdyenDropinService : DropInService() {
             DropInServiceResult.Error(reason = "IOException")
         }
     }
-}
-
-
-data class PaymentsRequestDataV69(
-    val shopperReference: String,
-    val amount: Amount,
-//    val countryCode: String,
-    val merchantAccount: String,
-    val returnUrl: String,
-    val additionalData: AdditionalDataV69,
-    val threeDSAuthenticationOnly: Boolean,
-    val shopperIP: String,
-    val reference: String,
-    val channel: String,
-    val lineItems: List<Item>,
-    val shopperEmail: String? = null,
-    val threeDS2RequestData: ThreeDS2RequestDataRequest?
-)
-
-data class ThreeDS2RequestDataRequest(
-    val deviceChannel: String = "app",
-    val challengeIndicator: String = "requestChallenge"
-)
-
-fun createAmount(value: Int, currency: String): Amount {
-    val amount = Amount()
-    amount.currency = currency
-    amount.value = value
-    return amount
-}
-
-//region data classes
-data class Payment(
-    val paymentMethod: PaymentMethodDetails,
-    val countryCode: String = "DE",
-    val storePaymentMethod: Boolean,
-    val amount: Amount,
-    val reference: String,
-    val returnUrl: String,
-    val channel: String = "Android",
-    val lineItems: List<LineItem?>,
-    val additionalData: AdditionalData = AdditionalData(allow3DS2 = "true"),
-    val shopperReference: String?
-) : Serializable
-
-data class PaymentsRequest(
-    val payment: Payment,
-    val additionalData: Map<String, String>
-) : Serializable
-
-
-data class LineItem(
-    val id: String,
-    val description: String
-) : Serializable
-
-data class AdditionalData(val allow3DS2: String = "true")
-//endregion
-
-
-data class AdditionalDataV69(
-    val allow3DS2: String = "false",
-    val executeThreeD: String = "false"
-)
-
-private fun PaymentsRequestV69.combineToJSONObject(): JSONObject {
-    val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
-    val adapter = moshi.adapter(PaymentsRequestDataV69::class.java)
-    val requestDataJson = JSONObject(adapter.toJson(this.requestData))
-
-    return requestDataJson
-        // This will override any already existing fields in requestDataJson
-        .putAll(this.paymentComponentData)
 }
