@@ -1,6 +1,5 @@
 package app.adyen.flutter_adyen.network.requests
 
-import app.adyen.flutter_adyen.PaymentsRequestDataV69
 import org.json.JSONObject
 import java.io.Serializable
 
