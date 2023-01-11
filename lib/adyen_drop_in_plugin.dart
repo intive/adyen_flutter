@@ -14,6 +14,7 @@ class AdyenDropInPlugin {
       required String reference,
       lineItem,
       required String locale,
+      required String accessToken,
       required String amount,
       required String currency,
       required String returnUrl,
@@ -30,6 +31,7 @@ class AdyenDropInPlugin {
     args.putIfAbsent('publicKey', () => publicKey);
     args.putIfAbsent('amount', () => amount);
     args.putIfAbsent('locale', () => locale);
+    args.putIfAbsent('accessToken', () => accessToken);
     args.putIfAbsent('currency', () => currency);
     args.putIfAbsent('lineItem', () => lineItem);
     args.putIfAbsent('returnUrl', () => returnUrl);

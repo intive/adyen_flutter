@@ -34,6 +34,7 @@ class _MyAppState extends State<MyApp> {
                 publicKey:
                     'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-jNCgh/vvn6xbpxlu0g0IQR/Ta3fnvZHHmpf223MdtW8=-7U5<8,~MVEImAzZg',
                 locale: 'zh-rHK',
+                accessToken: 'QElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGK',
                 shopperReference: 'asdasda',
                 returnUrl: '',
                 amount: '1230',
