@@ -87,6 +87,7 @@ class FlutterAdyenPlugin :
                 val baseUrl = call.argument<String>("baseUrl")
                 val clientKey = call.argument<String>("clientKey")
                 val apiKey = call.argument<String>("publicKey")
+                val accessToken = call.argument<String>("accessToken")
                 val amount = call.argument<String>("amount")
                 val currency = call.argument<String>("currency")
                 val env = call.argument<String>("environment")
@@ -151,6 +152,7 @@ class FlutterAdyenPlugin :
                         putString("additionalData", additionalDataString)
                         putString("shopperReference", shopperReference)
                         putString("apiKey", apiKey)
+                        putString("accessToken", accessToken)
                         putString("returnUrl", returnUrl)
                         putString("merchantAccount", merchantAccount)
                         putString("reference", reference)
@@ -263,6 +265,7 @@ class AdyenDropinService : DropInService() {
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
         val merchantAccount = sharedPref.getString("merchantAccount", "UNDEFINED_STR")
         val apiKey: String = sharedPref.getString("apiKey", "") ?: ""
+        val accessToken: String = sharedPref.getString("accessToken", "") ?: ""
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val locale = sharedPref.getString("locale", "UNDEFINED_STR")
@@ -305,6 +308,7 @@ class AdyenDropinService : DropInService() {
 
         val headers: HashMap<String, String> = HashMap()
         headers["x-API-key"] = apiKey
+        headers["Authorization"] = "Bearer $accessToken"
         headers["content-type"] = "application/json"
         val re = paymentsRequest.combineToJSONObject()
         val call = getService(headers, baseUrl ?: "").payments(re)
@@ -325,9 +329,11 @@ class AdyenDropinService : DropInService() {
     override fun makeDetailsCall(actionComponentJson: JSONObject): DropInServiceResult {
         val sharedPref = getSharedPreferences("ADYEN", Context.MODE_PRIVATE)
         val apiKey: String = sharedPref.getString("apiKey", "") ?: ""
+        val accessToken: String = sharedPref.getString("accessToken", "") ?: ""
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
         val headers: HashMap<String, String> = HashMap()
         headers["x-API-key"] = apiKey
+        headers["Authorization"] = "Bearer $accessToken"
         headers["content-type"] = "application/json"
         val call = getService(headers, baseUrl ?: "").details(actionComponentJson)
         return try {
