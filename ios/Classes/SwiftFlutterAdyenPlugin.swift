@@ -22,6 +22,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
     var dropInComponent: DropInComponent?
     var baseURL: String?
     var authToken: String?
+    var accessToken: String?
     var merchantAccount: String?
     var clientKey: String?
     var publicKey: String?
@@ -56,6 +57,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         returnUrl = arguments?["returnUrl"] as? String
         shopperReference = arguments?["shopperReference"] as? String
         shopperLocale = String((arguments?["locale"] as? String)?.split(separator: "_").last ?? "DE")
+        accessToken = arguments["accessToken"] as? String
         mResult = result
 
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
@@ -107,6 +109,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(publicKey ?? "", forHTTPHeaderField: "x-API-key")
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         let amountAsInt = Int(amount ?? "0")
         // prepare json data
@@ -167,6 +170,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(publicKey ?? "", forHTTPHeaderField: "x-API-key")
+        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         do {
             let detailsRequestData = try JSONEncoder().encode(data.details.encodable)
             request.httpBody = detailsRequestData
