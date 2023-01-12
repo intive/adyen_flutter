@@ -1,3 +1,5 @@
+## 0.0.1+15
+* Fix IOS can't run build
 ## 0.0.1+14
 * Support Basic Auth for both Android and IOS
 ## 0.0.1+13

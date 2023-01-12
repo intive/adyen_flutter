@@ -57,7 +57,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         returnUrl = arguments?["returnUrl"] as? String
         shopperReference = arguments?["shopperReference"] as? String
         shopperLocale = String((arguments?["locale"] as? String)?.split(separator: "_").last ?? "DE")
-        accessToken = arguments["accessToken"] as? String
+        accessToken = arguments?["accessToken"] as? String
         mResult = result
 
         guard let paymentData = paymentMethodsResponse?.data(using: .utf8),
