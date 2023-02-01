@@ -1,3 +1,5 @@
+## 0.0.1+16
+* Fix IOS null access_token
 ## 0.0.1+15
 * Fix IOS can't run build
 ## 0.0.1+14
