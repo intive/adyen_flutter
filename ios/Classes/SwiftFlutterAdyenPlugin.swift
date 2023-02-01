@@ -109,7 +109,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(publicKey ?? "", forHTTPHeaderField: "x-API-key")
-        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.addValue("Bearer \(accessToken ?? "")", forHTTPHeaderField: "Authorization")
 
         let amountAsInt = Int(amount ?? "0")
         // prepare json data
@@ -170,7 +170,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue(publicKey ?? "", forHTTPHeaderField: "x-API-key")
-        request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.addValue("Bearer \(accessToken ?? "")", forHTTPHeaderField: "Authorization")
         do {
             let detailsRequestData = try JSONEncoder().encode(data.details.encodable)
             request.httpBody = detailsRequestData
