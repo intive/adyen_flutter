@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
                 locale: 'zh-rHK',
                 accessToken: 'QElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGK',
                 shopperReference: 'asdasda',
-                returnUrl: '',
+                returnUrl: 'appscheme://payment',
                 amount: '1230',
                 lineItem: {'id': '1', 'description': 'adyen test'},
                 currency: 'HKD',

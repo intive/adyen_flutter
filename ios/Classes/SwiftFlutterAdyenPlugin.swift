@@ -152,7 +152,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                 component.stopLoadingIfNeeded()
                 if response.resultCode == .authorised || response.resultCode == .received || response.resultCode == .pending, let result = self.mResult {
                     result(response.resultCode.rawValue)
-                    self.topController?.dismiss(animated: false, completion: nil)
+                    self.topController?.dismiss(animated: true, completion: nil)
 
                 } else if (response.resultCode == .error || response.resultCode == .refused) {
                     self.didFail(with: PaymentError(), from: component)
@@ -173,7 +173,10 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.addValue("Bearer \(accessToken ?? "")", forHTTPHeaderField: "Authorization")
         do {
             let detailsRequestData = try JSONEncoder().encode(data.details.encodable)
-            request.httpBody = detailsRequestData
+            let detailsRequestString = String(data: detailsRequestData, encoding: .utf8) ?? ""
+            let detailsData  = "{ \"details\": \(detailsRequestString) }".data(using: .utf8)
+            request.httpBody = detailsData
+            
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let response = response as? HTTPURLResponse {
                     if (response.statusCode != 200) {
