@@ -1,3 +1,5 @@
+## 0.0.1+17
+* Fix IOS redirect
 ## 0.0.1+16
 * Fix IOS null access_token
 ## 0.0.1+15
