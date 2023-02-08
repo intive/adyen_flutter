@@ -30,6 +30,23 @@ var examplePaymentMethods2 = {
       "type": "scheme"
     },
     {"name": "AliPay HK", "type": "alipay_hk"},
+    {
+      "brands": ["visa", "mc"],
+      "configuration": {
+        "merchantId": "merchant.com.adyen.venchi",
+        "merchantName": "Merchant Adyen Venchi"
+      },
+      "name": "Apple Pay",
+      "type": "applepay"
+    },
+    {
+      "configuration": {
+        "merchantId": "50",
+        "gatewayMerchantId": "LegatoTech_LegatoTechECOM2_TEST"
+      },
+      "name": "Google Pay",
+      "type": "googlepay"
+    },
     {"name": "WeChat Pay", "type": "wechatpayMiniProgram"},
     {"name": "WeChat Pay", "type": "wechatpayQR"},
     {"name": "WeChat Pay", "type": "wechatpayWeb"}

@@ -1,3 +1,5 @@
+## 0.0.1+18
+* re-format lineItem 
 ## 0.0.1+17
 * Fix IOS redirect
 ## 0.0.1+16
