@@ -4,6 +4,7 @@ import Adyen
 import Adyen3DS2
 import Foundation
 import AdyenNetworking
+import PassKit
 
 struct PaymentError: Error {
 
@@ -76,33 +77,52 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
 
         let dropInComponentStyle = DropInComponent.Style()
 
-        let apiContext = APIContext(environment: ctx, clientKey: clientKey!)
-        let configuration = DropInComponent.Configuration(apiContext: apiContext);
-        configuration.card.showsHolderNameField = true
-        dropInComponent = DropInComponent(paymentMethods: paymentMethods, configuration: configuration, style: dropInComponentStyle)
-        dropInComponent?.delegate = self
-
-        if var topController = UIApplication.shared.keyWindow?.rootViewController, let dropIn = dropInComponent {
-            self.topController = topController
-            while let presentedViewController = topController.presentedViewController{
-                topController = presentedViewController
+        do {
+            let apiContext = try APIContext(environment: ctx, clientKey: clientKey!)
+            
+            let ammount = Adyen.Amount(value: Int(amount ?? "") ?? 0, currencyCode: currency ?? "")
+            let payment = Adyen.Payment(amount: ammount, countryCode: shopperLocale ?? "")
+            let adyenContext = AdyenContext(apiContext: apiContext, payment: payment)
+            
+            let configuration = DropInComponent.Configuration(style: dropInComponentStyle)
+            configuration.card.showsHolderNameField = true
+            
+            // Apple pay
+            do {
+                let payment = try ApplePayPayment(
+                    countryCode: shopperLocale ?? "",
+                    currencyCode: currency ?? "",
+                    summaryItems: [
+                    PKPaymentSummaryItem(label: "A", amount: 100),
+                    PKPaymentSummaryItem(label: "B", amount: 100)
+                ])
+                let merchantIdentifier = "merchant.com.adyen.venchi"
+                let applePayConfiguration = ApplePayComponent.Configuration(payment: payment, merchantIdentifier: merchantIdentifier)
+                configuration.applePay = applePayConfiguration
+            } catch {
+                print("Fail to config apple pay")
             }
-            topController.present(dropIn.viewController, animated: true)
+            
+            dropInComponent = DropInComponent(paymentMethods: paymentMethods, context: adyenContext, configuration: configuration)
+            dropInComponent?.delegate = self
+
+            if var topController = UIApplication.shared.keyWindow?.rootViewController, let dropIn = dropInComponent {
+                self.topController = topController
+                while let presentedViewController = topController.presentedViewController{
+                    topController = presentedViewController
+                }
+                topController.present(dropIn.viewController, animated: true)
+            }
+        } catch {
+            print(error.localizedDescription)
         }
     }
 }
 
 extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
-
-    public func didComplete(from component: DropInComponent) {
-        component.stopLoadingIfNeeded()
-    }
-
-    public func didCancel(component: PaymentComponent, from dropInComponent: DropInComponent) {
-        self.didFail(with: PaymentCancelled(), from: dropInComponent)
-    }
-
-    public func didSubmit(_ data: PaymentComponentData, for paymentMethod: PaymentMethod, from component: DropInComponent) {
+    
+    public func didSubmit(_ data: Adyen.PaymentComponentData, from component: Adyen.PaymentComponent, in dropInComponent: Adyen.AnyDropInComponent) {
+        
         NSLog("I'm here")
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments") else { return }
         var request = URLRequest(url: url)
@@ -127,44 +147,19 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             request.httpBody = jsonData
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let data = data {
-                    self.finish(data: data, component: component)
+                    self.finish(data: data, component: dropInComponent)
                 }
                 if error != nil {
-                    self.didFail(with: PaymentError(), from: component)
+                    self.didFail(with: PaymentError(), from: component, in: dropInComponent)
                 }
             }.resume()
         } catch {
-            didFail(with: PaymentError(), from: component)
-        }
-
-    }
-
-    func finish(data: Data, component: DropInComponent) {
-        DispatchQueue.main.async {
-            guard let response = try? JSONDecoder().decode(PaymentsResponse.self, from: data) else {
-                self.didFail(with: PaymentError(), from: component)
-                return
-            }
-            if let action = response.action {
-                component.stopLoadingIfNeeded()
-                component.handle(action)
-            } else {
-                component.stopLoadingIfNeeded()
-                if response.resultCode == .authorised || response.resultCode == .received || response.resultCode == .pending, let result = self.mResult {
-                    result(response.resultCode.rawValue)
-                    self.topController?.dismiss(animated: true, completion: nil)
-
-                } else if (response.resultCode == .error || response.resultCode == .refused) {
-                    self.didFail(with: PaymentError(), from: component)
-                }
-                else {
-                    self.didFail(with: PaymentCancelled(), from: component)
-                }
-            }
+            didFail(with: PaymentError(), from: component, in: dropInComponent)
         }
     }
-
-    public func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
+    
+    public func didProvide(_ data: Adyen.ActionComponentData, from component: Adyen.ActionComponent, in dropInComponent: Adyen.AnyDropInComponent) {
+        
         guard let baseURL = baseURL, let url = URL(string: baseURL + "payments/details") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -180,20 +175,38 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let response = response as? HTTPURLResponse {
                     if (response.statusCode != 200) {
-                        self.didFail(with: PaymentError(), from: component)
+                        self.didFail(with: PaymentError(), from: component, in:  dropInComponent)
                     }
                 }
                 if let data = data {
-                    self.finish(data: data, component: component)
+                    self.finish(data: data, component: dropInComponent)
                 }
 
             }.resume()
         } catch {
-            self.didFail(with: PaymentError(), from: component)
+            self.didFail(with: PaymentError(), from: component, in: dropInComponent)
         }
     }
-
-    public func didFail(with error: Error, from component: DropInComponent) {
+    
+    public func didComplete(from component: Adyen.ActionComponent, in dropInComponent: Adyen.AnyDropInComponent) {
+        component.stopLoadingIfNeeded()
+    }
+    
+    public func didCancel(component: PaymentComponent, from dropInComponent: AnyDropInComponent) {
+        didFail(with: PaymentCancelled(), from: dropInComponent)
+    }
+    
+    public func didFail(with error: Error, from component: Adyen.PaymentComponent, in dropInComponent: Adyen.AnyDropInComponent) {
+        print("[didSubmit] \(error.localizedDescription)")
+        didFail(with: error, from: dropInComponent)
+    }
+    
+    public func didFail(with error: Error, from component: Adyen.ActionComponent, in dropInComponent: Adyen.AnyDropInComponent) {
+        print("[didProvide] \(error.localizedDescription)")
+        didFail(with: error, from: dropInComponent)
+    }
+    
+    public func didFail(with error: Error, from dropInComponent: Adyen.AnyDropInComponent) {
         DispatchQueue.main.async {
             if (error is PaymentCancelled) {
                 self.mResult?("PAYMENT_CANCELLED")
@@ -203,6 +216,34 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
                 self.mResult?("PAYMENT_ERROR")
             }
             self.topController?.dismiss(animated: true, completion: nil)
+        }
+    }
+    
+    func finish(data: Data, component: Adyen.AnyDropInComponent) {
+        DispatchQueue.main.async {
+            guard let response = try? JSONDecoder().decode(PaymentsResponse.self, from: data) else {
+                self.didFail(with: PaymentError(), from: component)
+                return
+            }
+            if let action = response.action {
+                component.stopLoadingIfNeeded()
+                if let component = component as? DropInComponent {
+                    component.handle(action)
+                }
+                
+            } else {
+                component.stopLoadingIfNeeded()
+                if response.resultCode == .authorised || response.resultCode == .received || response.resultCode == .pending, let result = self.mResult {
+                    result(response.resultCode.rawValue)
+                    self.topController?.dismiss(animated: true, completion: nil)
+
+                } else if (response.resultCode == .error || response.resultCode == .refused) {
+                    self.didFail(with: PaymentError(), from: component)
+                }
+                else {
+                    self.didFail(with: PaymentCancelled(), from: component)
+                }
+            }
         }
     }
 }
