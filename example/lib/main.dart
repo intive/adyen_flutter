@@ -27,20 +27,23 @@ class _MyAppState extends State<MyApp> {
           child: Icon(Icons.add),
           onPressed: () async {
             try {
+              final List<Map<String, String>> items = [];
+              items.add({'id': '1', 'quantity': '1'});
+
               dropInResponse = await AdyenDropInPlugin.openDropIn(
                 paymentMethods: jsonEncode(examplePaymentMethods2),
                 baseUrl: 'https://checkout-test.adyen.com/v69/',
                 clientKey: 'test_SN3VYRCD5BGE7DGKOCLRVO2Y744KZIMC',
                 publicKey:
-                    'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-jNCgh/vvn6xbpxlu0g0IQR/Ta3fnvZHHmpf223MdtW8=-7U5<8,~MVEImAzZg',
-                locale: 'zh-rHK',
+                    'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-vkwDN9XLxb+X04zNqgWvSxWMedghO9+pMgNa2hs9dhI=-wHJ38#+FDCuSG[>8',
+                locale: 'CN',
                 accessToken: 'QElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGK',
                 shopperReference: 'asdasda',
                 returnUrl: 'appscheme://payment',
                 amount: '1230',
-                lineItem: {'id': '1', 'description': 'adyen test'},
-                currency: 'HKD',
-                merchantAccount: 'LegatoTechECOM',
+                lineItem: items,
+                currency: 'CNY',
+                merchantAccount: 'LegatoTech_LegatoTechECOM2_TEST',
                 reference:
                     '${Platform.isIOS ? 'ios' : 'android'}-components_${DateTime.now().millisecondsSinceEpoch}',
                 threeDS2RequestData: {

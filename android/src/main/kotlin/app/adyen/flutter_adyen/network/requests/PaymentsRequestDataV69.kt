@@ -14,7 +14,7 @@ data class PaymentsRequestDataV69(
     val shopperIP: String? = null,
     val reference: String,
     val channel: String,
-    val lineItems: List<Item>,
+    val lineItems: List<Map<String, String>>,
     val shopperEmail: String? = null,
     val threeDS2RequestData: Map<String, String>?
 )

@@ -10,7 +10,6 @@ import app.adyen.flutter_adyen.utils.createPaymentRequestV69
 import app.adyen.flutter_adyen.utils.getAmount
 import com.adyen.checkout.card.CardConfiguration
 import com.adyen.checkout.components.model.PaymentMethodsApiResponse
-import com.adyen.checkout.components.model.paymentmethods.Item
 import com.adyen.checkout.components.model.payments.request.PaymentComponentData
 import com.adyen.checkout.components.model.payments.response.Action
 import com.adyen.checkout.core.api.Environment
@@ -24,7 +23,6 @@ import com.adyen.checkout.redirect.RedirectComponent
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
-import com.squareup.moshi.Moshi
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -91,7 +89,7 @@ class FlutterAdyenPlugin :
                 val amount = call.argument<String>("amount")
                 val currency = call.argument<String>("currency")
                 val env = call.argument<String>("environment")
-                val lineItem = call.argument<Map<String, String>>("lineItem")
+                val lineItem = call.argument<ArrayList<Map<String, String>>>("lineItem")
                 val shopperReference = call.argument<String>("shopperReference")
                 val locale = call.argument<String>("locale") ?: ""
 
@@ -101,11 +99,14 @@ class FlutterAdyenPlugin :
                 val threeDS2RequestData =
                     call.argument<Map<String, String>>("threeDS2RequestData") ?: emptyMap()
                 val storePaymentMethod = call.argument<Boolean>("storePaymentMethod")
+                val additionalParamsData =
+                    call.argument<Map<String, String>>("additionalParams") ?: emptyMap()
 
                 @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-                val lineItemString = JSONObject(lineItem).toString()
+//                val lineItemString = JSONObject(lineItem).toString()
                 val additionalDataString = JSONObject(additionalData).toString()
                 val threeDS2RequestDataString = JSONObject(threeDS2RequestData).toString()
+                val additionalParamsString = JSONObject(additionalParamsData).toString()
                 val localeString = call.argument<String>("locale") ?: "de_DE"
                 val countryCode = localeString.split("_").last()
 
@@ -148,7 +149,7 @@ class FlutterAdyenPlugin :
                         putString("countryCode", countryCode)
                         putString("locale", locale)
                         putString("currency", currency)
-                        putString("lineItem", lineItemString)
+                        putString("lineItem", Gson().toJson(lineItem))
                         putString("additionalData", additionalDataString)
                         putString("shopperReference", shopperReference)
                         putString("apiKey", apiKey)
@@ -157,6 +158,7 @@ class FlutterAdyenPlugin :
                         putString("merchantAccount", merchantAccount)
                         putString("reference", reference)
                         putString("threeDS2RequestData", threeDS2RequestDataString)
+                        putString("additionalParams", additionalParamsString)
                         putBoolean("storePaymentMethod", storePaymentMethod ?: false)
                         commit()
                     }
@@ -269,17 +271,15 @@ class AdyenDropinService : DropInService() {
         val amount = sharedPref.getString("amount", "UNDEFINED_STR")
         val currency = sharedPref.getString("currency", "UNDEFINED_STR")
         val locale = sharedPref.getString("locale", "UNDEFINED_STR")
-        val lineItemString = sharedPref.getString("lineItem", "UNDEFINED_STR")
+        val lineItemString = sharedPref.getString("lineItem", "[]")
         val additionalDataString = sharedPref.getString("additionalData", "UNDEFINED_STR")
         val threeDS2RequestDataString = sharedPref.getString("threeDS2RequestData", "UNDEFINED_STR")
         val shopperReference = sharedPref.getString("shopperReference", null)
         val reference = sharedPref.getString("reference", "UNDEFINED_STR")
 
-        val moshi = Moshi.Builder().build()
-        val jsonAdapter = moshi.adapter(Item::class.java)
-        val item: Item? = jsonAdapter.fromJson(lineItemString ?: "")
-
         val gson = Gson()
+        val item: List<Map<String, String>>? =
+            gson.fromJson<List<Map<String, String>>>(lineItemString ?: "")
 
         val additionalData =
             gson.fromJson<Map<String, String>>(additionalDataString ?: "") ?: emptyMap()
@@ -303,7 +303,7 @@ class AdyenDropinService : DropInService() {
             shopperEmail = null,
             additionalData = additionalData,
             reference = reference ?: "",
-            items = if (item != null) listOf(item) else emptyList()
+            items = item ?: emptyList()
         )
 
         val headers: HashMap<String, String> = HashMap()
@@ -331,10 +331,15 @@ class AdyenDropinService : DropInService() {
         val apiKey: String = sharedPref.getString("apiKey", "") ?: ""
         val accessToken: String = sharedPref.getString("accessToken", "") ?: ""
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
+        val lineItemString = sharedPref.getString("lineItem", "[]")
+        val item: List<Map<String, String>>? =
+            Gson().fromJson<List<Map<String, String>>>(lineItemString ?: "")
         val headers: HashMap<String, String> = HashMap()
         headers["x-API-key"] = apiKey
         headers["Authorization"] = "Bearer $accessToken"
         headers["content-type"] = "application/json"
+        if(item != null)
+            actionComponentJson.put("lineItems", lineItemString)
         val call = getService(headers, baseUrl ?: "").details(actionComponentJson)
         return try {
             val response = call.execute()

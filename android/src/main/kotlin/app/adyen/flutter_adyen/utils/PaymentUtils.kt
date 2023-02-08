@@ -3,7 +3,6 @@ package app.adyen.flutter_adyen.utils
 import app.adyen.flutter_adyen.*
 import app.adyen.flutter_adyen.network.requests.PaymentsRequestDataV69
 import app.adyen.flutter_adyen.network.requests.PaymentsRequestV69
-import com.adyen.checkout.components.model.paymentmethods.Item
 import com.adyen.checkout.components.model.payments.Amount
 import com.google.gson.Gson
 import com.squareup.moshi.Moshi
@@ -43,7 +42,7 @@ fun createPaymentRequestV69(
     additionalData: Map<String, String>,
     threeDS2RequestData: Map<String, String>,
     reference: String,
-    items: List<Item>,
+    items: List<Map<String, String>>,
 ): PaymentsRequestV69 {
     val paymentsRequestData = PaymentsRequestDataV69(
         shopperReference = shopperReference,
