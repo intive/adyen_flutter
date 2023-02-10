@@ -32,16 +32,16 @@ class _MyAppState extends State<MyApp> {
 
               dropInResponse = await AdyenDropInPlugin.openDropIn(
                 paymentMethods: jsonEncode(examplePaymentMethods2),
-                baseUrl: 'https://checkout-test.adyen.com/v69/',
-                //'https://venchi-crm-progress.legato.co/api/v1/general/',
+                baseUrl: //'https://checkout-test.adyen.com/v69/',
+                    'https://venchi-crm-progress.legato.co/api/v1/general/',
                 clientKey: 'test_SN3VYRCD5BGE7DGKOCLRVO2Y744KZIMC',
                 publicKey:
                     'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-vkwDN9XLxb+X04zNqgWvSxWMedghO9+pMgNa2hs9dhI=-wHJ38#+FDCuSG[>8',
                 locale: 'HK',
-                accessToken: 'gnoCB8ttTKyjfiGeSaEr8imWnwWa2hraxsIV9qqb3b',
+                accessToken: '2F2ko01b7RwUozq6tAiMePzkksDQv2osGdxd9VnSrD',
                 shopperReference: 'asdasda',
                 returnUrl: 'appscheme://payment',
-                amount: '1000',
+                amount: '120',
                 lineItem: items,
                 currency: 'HKD',
                 merchantAccount: 'LegatoTechECOM',
