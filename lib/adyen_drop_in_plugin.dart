@@ -22,6 +22,7 @@ class AdyenDropInPlugin {
       required bool storePaymentMethod,
       required Map<String, String> threeDS2RequestData,
       required Map<String, String> additionalData,
+      required String appleMerchantID,
       environment = 'TEST'}) async {
     Map<String, dynamic> args = {};
     args.putIfAbsent('paymentMethods', () => paymentMethods);
@@ -40,6 +41,7 @@ class AdyenDropInPlugin {
     args.putIfAbsent('merchantAccount', () => merchantAccount);
     args.putIfAbsent('reference', () => reference);
     args.putIfAbsent('threeDS2RequestData', () => threeDS2RequestData);
+    args.putIfAbsent('appleMerchantID', () => appleMerchantID);
 
     final String response = await _channel.invokeMethod('openDropIn', args);
     return response;

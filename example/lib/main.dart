@@ -28,7 +28,7 @@ class _MyAppState extends State<MyApp> {
           onPressed: () async {
             try {
               final List<Map<String, String>> items = [];
-              items.add({'id': '1', 'quantity': '1'});
+              items.add({'id': '1', 'quantity': '1', 'description': 'ABC'});
 
               dropInResponse = await AdyenDropInPlugin.openDropIn(
                 paymentMethods: jsonEncode(examplePaymentMethods2),
@@ -38,13 +38,13 @@ class _MyAppState extends State<MyApp> {
                 publicKey:
                     'AQElhmfuXNWTK0Qc+iScl2M5s+uvTYhFGKP8N1zUR10TF0LQ1jKYBxDBXVsNvuR83LVYjEgiTGAH-vkwDN9XLxb+X04zNqgWvSxWMedghO9+pMgNa2hs9dhI=-wHJ38#+FDCuSG[>8',
                 locale: 'HK',
-                accessToken: '2F2ko01b7RwUozq6tAiMePzkksDQv2osGdxd9VnSrD',
+                accessToken: 'LSv5pFnLN4Wux3lR0r5Azy2e0Rd7aHVzD6tM4uXORz',
                 shopperReference: 'asdasda',
                 returnUrl: 'appscheme://payment',
                 amount: '120',
                 lineItem: items,
                 currency: 'HKD',
-                merchantAccount: 'LegatoTechECOM',
+                merchantAccount: 'LegatoTech_LegatoTechECOM2_TEST',
                 reference:
                     '${Platform.isIOS ? 'ios' : 'android'}-components_${DateTime.now().millisecondsSinceEpoch}',
                 threeDS2RequestData: {
@@ -53,6 +53,7 @@ class _MyAppState extends State<MyApp> {
                 },
                 additionalData: {"allow3DS2": "true", "executeThreeD": "false"},
                 storePaymentMethod: false,
+                appleMerchantID: 'merchant.com.adyen.venchi',
               );
             } on PlatformException catch (e) {
               if (e.code == 'PAYMENT_CANCELLED')
