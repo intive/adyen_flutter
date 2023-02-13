@@ -22,16 +22,16 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
 
     var dropInComponent: DropInComponent?
     var topController: UIViewController?
-    
     var mResult: FlutterResult?
     
     // Header
     var baseURL: String = ""
     var accessToken: String = ""
     var publicKey: String = ""
-    // Config
+    // Config drop-in
     var clientKey: String = ""
     var environment: String = ""
+    var appleMerchantID: String = ""
     // Payment params
     var locale: String = ""
     var shopperReference: String?
@@ -55,6 +55,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
          
         clientKey = arguments?["clientKey"] as? String ?? ""
         environment = arguments?["environment"] as? String ?? ""
+        appleMerchantID = arguments?["appleMerchantID"] as? String ?? ""
         
         locale = arguments?["locale"] as? String ?? "HK"
         shopperReference = arguments?["shopperReference"] as? String
@@ -99,8 +100,8 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
         do {
             let apiContext = try APIContext(environment: ctx, clientKey: clientKey)
             
-            let ammount = Adyen.Amount(value: Int(amount) ?? 0, currencyCode: currency)
-            let payment = Adyen.Payment(amount: ammount, countryCode: locale)
+            let ammount = Amount(value: Decimal(string: amount) ?? 0, currencyCode: currency)
+            let payment = Payment(amount: ammount, countryCode: locale)
             let adyenContext = AdyenContext(apiContext: apiContext, payment: payment)
             
             let configuration = DropInComponent.Configuration(style: dropInComponentStyle)
@@ -108,9 +109,8 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
             
             // Apple pay
             do {
-                let amountDouble = (Double(amount) ?? 0)/100
                 let label = (lineItems != nil && lineItems!.count == 1) ? lineItems!.first!.description : "Total"
-                let total = PKPaymentSummaryItem(label: label, amount: NSDecimalNumber.init(decimal: Decimal(floatLiteral: amountDouble)), type: .final)
+                let total = PKPaymentSummaryItem(label: label, amount: NSDecimalNumber(string: amount), type: .final)
                 let paymentSummaryItems = [total]
                 
                 let payment = try ApplePayPayment(
@@ -118,7 +118,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
                     currencyCode: currency,
                     summaryItems: paymentSummaryItems
                 )
-                let merchantIdentifier = "merchant.com.adyen.venchi"
+                let merchantIdentifier = appleMerchantID
                 let applePayConfiguration = ApplePayComponent.Configuration(payment: payment, merchantIdentifier: merchantIdentifier)
                 configuration.applePay = applePayConfiguration
             } catch {
@@ -153,7 +153,7 @@ extension SwiftFlutterAdyenPlugin: DropInComponentDelegate {
         request.addValue(publicKey, forHTTPHeaderField: "x-API-key")
         request.addValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
-        let amountAsInt = Int(amount) ?? 0
+        let amountAsInt = Decimal(string: amount) ?? 0
         let paymentMethod = data.paymentMethod.encodable
         let paymentRequest = PaymentRequestV69(
             paymentMethod: paymentMethod,
@@ -305,9 +305,9 @@ struct PaymentRequestV69: Encodable {
     let lineItems: [LineItem]
     let threeDS2RequestData: ThreeDS2RequestData?
 
-    init(paymentMethod: AnyEncodable, amount: Int, reference: String, returnUrl: String, merchantAccount: String, currency: String, shopperReference: String, countryCode: String , additionalData: AdditionalData?, lineItems: [LineItem]?, threeDS2RequestData: ThreeDS2RequestData?) {
+    init(paymentMethod: AnyEncodable, amount: Decimal, reference: String, returnUrl: String, merchantAccount: String, currency: String, shopperReference: String, countryCode: String , additionalData: AdditionalData?, lineItems: [LineItem]?, threeDS2RequestData: ThreeDS2RequestData?) {
         self.paymentMethod = paymentMethod
-        self.amount = Amount(currency: currency, value: amount)
+        self.amount = Amount(value: amount, currencyCode: currency)
         self.returnUrl = returnUrl
         self.merchantAccount = merchantAccount
         self.reference = reference
@@ -334,11 +334,6 @@ struct ThreeDS2RequestData: Codable {
 struct AdditionalData: Codable {
     let allow3DS2: String
     let executeThreeD: String
-}
-
-struct Amount: Codable {
-    let currency: String
-    let value: Int
 }
 
 internal struct PaymentsResponse: Response {
