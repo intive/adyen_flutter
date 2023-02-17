@@ -1,3 +1,5 @@
+## 0.0.1+20
+* refactor Apple pay
 ## 0.0.1+19
 * enable Apple pay
 ## 0.0.1+18
