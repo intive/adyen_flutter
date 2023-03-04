@@ -33,6 +33,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.*
@@ -332,14 +333,14 @@ class AdyenDropinService : DropInService() {
         val accessToken: String = sharedPref.getString("accessToken", "") ?: ""
         val baseUrl = sharedPref.getString("baseUrl", "UNDEFINED_STR")
         val lineItemString = sharedPref.getString("lineItem", "[]")
-        val item: List<Map<String, String>>? =
-            Gson().fromJson<List<Map<String, String>>>(lineItemString ?: "")
+        val itemArr = JSONArray(lineItemString ?: "")
+        if (itemArr.length() != 0)
+            actionComponentJson.put("lineItems", itemArr)
+
         val headers: HashMap<String, String> = HashMap()
         headers["x-API-key"] = apiKey
         headers["Authorization"] = "Bearer $accessToken"
         headers["content-type"] = "application/json"
-        if(item != null)
-            actionComponentJson.put("lineItems", lineItemString)
         val call = getService(headers, baseUrl ?: "").details(actionComponentJson)
         return try {
             val response = call.execute()
