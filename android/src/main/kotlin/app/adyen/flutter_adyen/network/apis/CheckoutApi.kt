@@ -68,7 +68,12 @@ fun getService(headers: HashMap<String, String>, baseUrl: String): CheckoutApi {
         .build()
     val converter = MoshiConverterFactory.create(moshi)
 
-    val client = OkHttpClient.Builder().addInterceptor(HeaderInterceptor(headers)).build()
+    val client = OkHttpClient
+        .Builder()
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .addInterceptor(HeaderInterceptor(headers))
+        .build()
 
     val retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)

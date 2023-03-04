@@ -1,6 +1,6 @@
 name: adyen_drop_in_plugin
 description: Flutter plugin to integrate Adyen DropIn UI for Android and iOS.
-version: 0.0.1+21
+version: 0.0.1+22
 homepage: https://github.com/corgivn/adyen_flutter
 
 environment:

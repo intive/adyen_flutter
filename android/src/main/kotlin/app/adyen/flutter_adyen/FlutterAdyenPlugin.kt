@@ -87,7 +87,8 @@ class FlutterAdyenPlugin :
                 val clientKey = call.argument<String>("clientKey")
                 val apiKey = call.argument<String>("publicKey")
                 val accessToken = call.argument<String>("accessToken")
-                val amount = call.argument<String>("amount")
+                // https://docs.adyen.com/development-resources/currency-codes HKD
+                val amount = call.argument<String>("amount").plus("00")
                 val currency = call.argument<String>("currency")
                 val env = call.argument<String>("environment")
                 val lineItem = call.argument<ArrayList<Map<String, String>>>("lineItem")
@@ -136,7 +137,7 @@ class FlutterAdyenPlugin :
                     val paymentMethodsApiResponse =
                         PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject)
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
-                        .setHolderNameRequired(false)
+                        .setHolderNameRequired(true)
                         .setShopperLocale(LocaleUtil.getLocale(nonNullActivity))
                         .setEnvironment(environment)
                         .build()
@@ -146,7 +147,7 @@ class FlutterAdyenPlugin :
                     with(sharedPref.edit()) {
                         remove("AdyenResultCode")
                         putString("baseUrl", baseUrl)
-                        putString("amount", "$amount")
+                        putString("amount", amount)
                         putString("countryCode", countryCode)
                         putString("locale", locale)
                         putString("currency", currency)
