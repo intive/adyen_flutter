@@ -1,3 +1,5 @@
+## 0.0.1+23
+* [Android] Increase API readTimeout up to 60s
 ## 0.0.1+22
 * [Android] Increase API timeout up to 60s
 ## 0.0.1+21
