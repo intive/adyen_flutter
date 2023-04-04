@@ -106,7 +106,7 @@ public class SwiftFlutterAdyenPlugin: NSObject, FlutterPlugin {
             
             let configuration = DropInComponent.Configuration(style: dropInComponentStyle)
             configuration.card.showsHolderNameField = true
-            
+            configuration.card.showsStorePaymentMethodField = false
             // Apple pay
             do {
                 let label = (lineItems != nil && lineItems!.count == 1) ? lineItems!.first!.description : "Total"
