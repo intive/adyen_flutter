@@ -139,6 +139,7 @@ class FlutterAdyenPlugin :
                     val cardConfiguration = CardConfiguration.Builder(nonNullActivity, clientKey!!)
                         .setHolderNameRequired(true)
                         .setShopperLocale(LocaleUtil.getLocale(nonNullActivity))
+                        .setShowStorePaymentField(false)
                         .setEnvironment(environment)
                         .build()
 
