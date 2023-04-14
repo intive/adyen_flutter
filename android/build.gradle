@@ -19,7 +19,7 @@ buildscript {
     ext.version_multidex = "1.0.3"
 
     // Example app\
-    ext.version_retrofit2 = "2.5.0"
+    ext.version_retrofit2 = "2.9.0"
     ext.version_moshi_converter = "2.4.0"
     ext.version_coroutines_adapter = "0.9.2"
     ext.version_moshi_adapters = "1.8.0"
@@ -75,5 +75,6 @@ dependencies {
     implementation "com.squareup.retrofit2:converter-moshi:$version_retrofit2"
     implementation "com.squareup.retrofit2:converter-gson:$version_retrofit2"
     implementation "com.squareup.moshi:moshi-adapters:$version_moshi_adapters"
+    implementation "com.squareup.moshi:moshi-kotlin:$version_moshi_adapters"
     implementation "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter:$version_coroutines_adapter"
 }
